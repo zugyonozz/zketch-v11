@@ -4,8 +4,6 @@
 #include <unordered_map>
 #include <queue>
 
-using QE = std::queue<Event> ;
-
 namespace error_handler {
 	struct register_class_failed { cstr what() const noexcept { return "Failed to register window class" ; } } ;
 	struct create_window_failed { cstr what() const noexcept { return "Failed to create window" ; } } ;
@@ -15,14 +13,19 @@ class Window {
 private :
 
 	using HWNDM = std::unordered_map<HWND, Window*> ;
+	using QE = std::queue<Event> ;
 
 	HWND m_hwnd = nullptr ;
 	HINSTANCE m_hInstance = nullptr ;
 	Rect m_bound ;
 	cstr m_title ;
 	bool m_shouldclose = false ;
-	static inline QE m_events ;
+	QE m_events ;
 	str WID = getWID() ;
+	static inline schar nwindow = 0 ;
+#ifdef USEGLOBEV 
+	static inline QE GlobalEvents ; 
+#endif
 	static inline HWNDM hwndmap ;
 
 	static str getWID() {
@@ -73,10 +76,18 @@ private :
 			throw error_handler::create_window_failed() ;
 
 		hwndmap[m_hwnd] = this ;
+		nwindow++ ;
+#ifdef ZEVRECEIVE 
+		printf("Window [%s] created. Total count: %d\n", m_title, nwindow) ;
+#endif
 	}
 
 	void destroy() {
+#ifdef ZEVRECEIVE
+		printf("Destroying window [%s]\n", m_title) ;
+#endif
         if (m_hwnd) {
+			// hwndmap.erase(m_hwnd) ;
             DestroyWindow(m_hwnd) ;
             m_hwnd = nullptr ;
         }
@@ -85,31 +96,69 @@ private :
     }
 
 	LRESULT HandleMsg(HWND hwnd, uint msg, WPARAM wp, LPARAM lp) noexcept {
-		Event event = translateWinEvent(hwnd, msg, wp, lp);
-        if (event.type != EventType::None) 
+#ifdef ZEVRECEIVE
+		printf("Window [%s] received message: 0x%X\n", m_title, msg) ;
+#endif
+		Event event = translateWinEvent(hwnd, msg, wp, lp) ;
+        if (event.type != EventType::None) {
             m_events.push(event) ;
-
+#ifdef ZEVRECEIVE
+		printf("Event type %d pushed to window [%s]\n", (int)event.type, m_title) ;
+#endif
+#ifdef USEGLOBEV 
+			GlobalEvents.push(event) ; 
+#endif
+		}
         switch (msg) {
-            case WM_CLOSE:
-                m_shouldclose = true;
-                return 0;
+            case WM_CLOSE :
+#ifdef ZEVRECEIVE
+				printf("WM_CLOSE received by window [%s]\n", m_title) ;
+#endif
+				destroy() ;
+                m_shouldclose = true ;
+                return 0 ;
 
-            case WM_DESTROY:
-                PostQuitMessage(0);
-                return 0;
-
-            case WM_SIZE:
+            case WM_DESTROY : {
+#ifdef ZEVRECEIVE
+				printf("WM_DESTROY received by window [%s]\n", m_title) ;
+#endif
+                auto it = hwndmap.find(hwnd) ;
+				if (it != hwndmap.end()) 
+                    hwndmap.erase(it) ;
+				if (nwindow > 0) 
+					nwindow-- ;
+#ifdef ZEVRECEIVE
+				printf("Remaining window count: %d\n", (int)nwindow) ;
+#endif
+                if (nwindow <= 0) {
+#ifdef ZEVRECEIVE
+					printf("Last window destroyed, calling PostQuitMessage\n") ;
+#endif
+                    PostQuitMessage(0) ;
+				}
+                return 0 ;
+			}
+            case WM_SIZE :
+#ifdef ZEVRECEIVE
+				printf("WM_SIZE received by window [%s]\n", m_title) ;
+#endif
                 m_bound.setSize(LOWORD(lp), HIWORD(lp)) ;
-                break;
+                break ;
 
-            case WM_MOVE:
+            case WM_MOVE :
+#ifdef ZEVRECEIVE
+				printf("WM_MOVE received by window [%s]\n", m_title) ;
+#endif
                 m_bound.setPos(LOWORD(lp), HIWORD(lp)) ;
-                break;
+                break ;
 
-            case WM_PAINT: {
-                PAINTSTRUCT ps;
-                HDC hdc = BeginPaint(hwnd, &ps);
-                RECT rect ;
+            case WM_PAINT : {
+#ifdef ZEVRECEIVE
+				printf("WM_PAINT received by window [%s]\n", m_title) ;
+#endif
+                PAINTSTRUCT ps ;
+                HDC hdc = BeginPaint(hwnd, &ps) ;
+                RECT rect  ;
                 GetClientRect(hwnd, &rect) ;
                 FillRect(hdc, &rect, (HBRUSH)GetStockObject(BLACK_BRUSH)) ;
                 EndPaint(hwnd, &ps) ;
@@ -214,8 +263,12 @@ public :
 	void getClientSize(uint& w, uint& h) const noexcept { RECT r ; GetClientRect(m_hwnd, &r) ; w = r.right - r.left ; h = r.bottom - r.top ; }
 	::Size getClientSize() const noexcept { return getClientBound().getSize() ; }
 	Rect getClientBound() const noexcept { RECT r1 ; GetClientRect(m_hwnd, &r1) ; return Rect{Pos{}, ::Size{r1.right - r1.left, r1.bottom - r1.top}} ; }
+	bool hasEvents() const { return !m_events.empty() ; }
+	void clearEvents() { while (!m_events.empty()) m_events.pop() ; }
+	static int getWindowCount() { return nwindow ; }
+    static void quitApplication() { PostQuitMessage(0) ; }
 
-	static bool pollEvent(Event& e) {
+	bool pollEvent(Event& e) {
         if (!m_events.empty()) {
             e = m_events.front();
             m_events.pop();
@@ -224,18 +277,39 @@ public :
         return false;
     }
 
-    void processMessage() noexcept {
+	static bool pollEventFromWindow(HWND hwnd, Event& e) {
+        auto it = hwndmap.find(hwnd);
+        if (it != hwndmap.end()) {
+            return it->second->pollEvent(e);
+        }
+        return false;
+    }
+
+#ifdef USEGLOBEV
+	static bool pollGlobalEvent(Event& e) {
+        if (!GlobalEvents.empty()) {
+            e = GlobalEvents.front();
+            GlobalEvents.pop();
+            return true;
+        }
+        return false;
+    }
+#endif
+
+    // void processMessage() noexcept {
+    //     MSG msg;
+    //     while (PeekMessage(&msg, m_hwnd, 0, 0, PM_REMOVE)) {
+    //         TranslateMessage(&msg);
+    //         DispatchMessage(&msg);
+    //     }
+    // }
+
+	static void processMessages() noexcept {
         MSG msg;
-        while (PeekMessage(&msg, m_hwnd, 0, 0, PM_REMOVE)) {
+        while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
-    }
-
-	static void processMessages() noexcept {
-        for (auto& w : hwndmap) {
-			w.second->processMessage() ;
-		}
     }
 	
 	void centerOnScreen() {
@@ -263,4 +337,9 @@ public :
         ClientToScreen(m_hwnd, &pt) ;
         return Point<uint>(pt.x, pt.y) ;
     }
+#ifdef ZWINDOWDEBUG
+	uint getEventCount() const {
+        return m_events.size() ;
+    }
+#endif
 } ;

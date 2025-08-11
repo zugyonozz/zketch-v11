@@ -11,7 +11,8 @@ enum class EventType : unsigned char {
     MouseMove,
     MouseDown,
     MouseUp,
-    Resize
+    Resize,
+	Close
 } ;
 
 enum class MouseButton : unsigned char {
@@ -23,6 +24,7 @@ enum class MouseButton : unsigned char {
 
 struct Event {
     EventType type = EventType::None ;
+	HWND hwnd = nullptr ;
 
     union {
         struct { 
@@ -57,6 +59,10 @@ struct Event {
 
         } resize ;
     } ;
+
+	bool isFromWindow(HWND src) const noexcept {
+		return hwnd == src ;
+	}
 
     Pos getMousePosition() const noexcept {
         return (type == EventType::MouseMove || type == EventType::MouseDown || type == EventType::MouseUp) ? mouse.position() : Pos{} ;
@@ -95,10 +101,13 @@ struct Event {
 
 inline Event translateWinEvent(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     Event ev ;
+	ev.hwnd = hwnd ;
 
     switch (msg) {
         case WM_QUIT :
         case WM_CLOSE :
+			ev.type = EventType::Close ;
+			break ;
         case WM_DESTROY :
             ev.type = EventType::Quit ;
             break ;
