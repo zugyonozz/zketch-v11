@@ -1,8 +1,7 @@
 #pragma once
 
-#include "zdef.h"
-#include "zunit.h"
 #include <windowsx.h>
+#include "zunit.h"
 
 enum class EventType : unsigned char {
     None,
@@ -34,11 +33,11 @@ struct Event {
             int x, y ; 
             MouseButton button ;
 
-            Point<uint> position() const noexcept { 
-				return Point<uint>{x, y} ; 
+            Pos position() const noexcept { 
+				return Pos{x, y} ; 
 			}
 
-            void setPosition(Point<uint> pos) noexcept { 
+            void setPosition(const Pos& pos) noexcept { 
 				x = pos.x ; 
 				y = pos.y ; 
 			}
@@ -47,11 +46,11 @@ struct Event {
         struct { 
             int width, height ;
 
-            Point<uint> size() const noexcept { 
-				return Point<uint>{width, height} ; 
+            Size size() const noexcept { 
+				return Size{width, height} ; 
 			}
 
-            void setSize(Point<uint> newSize) noexcept { 
+            void setSize(const Size& newSize) noexcept { 
 				width = newSize.x ; 
 				height = newSize.y ; 
 			}
@@ -59,17 +58,17 @@ struct Event {
         } resize ;
     } ;
 
-    Point<uint> getMousePosition() const noexcept {
-        return (type == EventType::MouseMove || type == EventType::MouseDown || type == EventType::MouseUp) ? mouse.position() : Point<uint>{0, 0} ;
+    Pos getMousePosition() const noexcept {
+        return (type == EventType::MouseMove || type == EventType::MouseDown || type == EventType::MouseUp) ? mouse.position() : Pos{} ;
     }
 
-    void setMousePosition(Point<uint> pos) noexcept {
+    void setMousePosition(Pos pos) noexcept {
         if (type == EventType::MouseMove || type == EventType::MouseDown || type == EventType::MouseUp) 
             mouse.setPosition(pos);
     }
 
-    Point<uint> getResizeSize() const noexcept {
-        return (type == EventType::Resize) ? resize.size() : Point<uint>{0} ;
+    Size getResizeSize() const noexcept {
+        return (type == EventType::Resize) ? resize.size() : Size{} ;
     }
 
     void setResizeSize(Point<uint> newSize) noexcept {
@@ -163,11 +162,11 @@ inline Event translateWinEvent(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     return ev ;
 }
 
-inline Point<uint> getEventPosition(const Event& event) {
+inline Pos getEventPosition(const Event& event) {
     return event.getMousePosition();
 }
 
-inline Point<uint> getEventSize(const Event& event) {
+inline Size getEventSize(const Event& event) {
     return event.getResizeSize();
 }
 

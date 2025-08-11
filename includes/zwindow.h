@@ -1,8 +1,8 @@
 #pragma once
 
+#include "zevent.h"
 #include <unordered_map>
 #include <queue>
-#include "zevent.h"
 
 using QE = std::queue<Event> ;
 
@@ -212,8 +212,8 @@ public :
 	void close() noexcept { m_shouldclose = true ; }
 	bool isValid() const noexcept { return m_hwnd && IsWindow(m_hwnd) ; }
 	void getClientSize(uint& w, uint& h) const noexcept { RECT r ; GetClientRect(m_hwnd, &r) ; w = r.right - r.left ; h = r.bottom - r.top ; }
-	Point<uint> getClientSize() const noexcept { return getClientBound().getSize() ; }
-	Rect getClientBound() const noexcept { RECT r1 ; GetClientRect(m_hwnd, &r1) ; return Rect{Point<uint>{}, Point<uint>{r1.right - r1.left, r1.bottom - r1.top}} ; }
+	::Size getClientSize() const noexcept { return getClientBound().getSize() ; }
+	Rect getClientBound() const noexcept { RECT r1 ; GetClientRect(m_hwnd, &r1) ; return Rect{Pos{}, ::Size{r1.right - r1.left, r1.bottom - r1.top}} ; }
 
 	static bool pollEvent(Event& e) {
         if (!m_events.empty()) {
@@ -233,14 +233,17 @@ public :
     }
 	
 	void centerOnScreen() {
-        Point<uint> screensize = {GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)} ;
-        Point<uint> wsize = getClientSize() ;
+        ::Size screensize = {GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)} ;
+        ::Size wsize = getClientSize() ;
         setPosition((screensize - wsize) / 2) ;
     }
 
 	bool containsPoint(Point<uint> pt) const {
         Rect b = getClientBound();
-        return pt.x >= b.x && pt.x < b.x + b.w && pt.y >=b.y && pt.y < b.y + b.h;
+        return 	pt.x >= b.x && 
+				pt.x < b.x + b.w && 
+				pt.y >= b.y && 
+				pt.y < b.y + b.h ;
     }
 
 	Point<uint> screenToClient(Point<uint> pos) const {
