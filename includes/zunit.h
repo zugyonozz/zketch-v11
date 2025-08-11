@@ -1,17 +1,31 @@
 #pragma once
 
+#include <ostream>
 #include <algorithm>
 #include <type_traits>
 #include "zdef.h"
 
+#define USE_Z_ALIAS
+#define USE_ZUNIT_HELPER
+
+#ifdef USE_Z_ALIAS
+
 template <bool cond, typename T = void> 
 using EI = std::enable_if_t<cond, T> ;
-template <typename ... Ts> using CT = std::common_type_t<Ts...> ;
+
+template <typename ... Ts> 
+using CT = std::common_type_t<Ts...> ;
+
+#endif
+
+#ifdef USE_ZUNIT_HELPER
 
 template <typename T, typename = EI<std::is_unsigned_v<T>>> 
 constexpr T uclamp(T val, T lim) noexcept { 
 	return val > lim ? lim : val ; 
 }
+
+#endif
 
 template <typename T, typename = EI<std::is_arithmetic_v<T>>> 
 struct Point {
@@ -242,6 +256,14 @@ constexpr auto operator/(U v, const Point<T>& a) noexcept -> Point<CT<T, U>> {
 	} ; 
 }
 
+#ifdef ZUNIT_DEBUG
+
+template <typename T> 
+std::ostream& operator<<(std::ostream& os, const Point<T>& pt) const noexcept {
+	return os << "{" << pt.x << ", " << pt.y << "}" ;
+}
+
+#endif
 
 template <typename T, typename = EI<std::is_arithmetic_v<T>>> 
 struct Quad {
@@ -530,10 +552,23 @@ constexpr auto operator/(U v, const Quad<T>& a) noexcept -> Quad<CT<T, U>> {
 	} ; 
 }
 
+#ifdef ZUNIT_DEBUG
+
+template <typename T> 
+std::ostream& operator<<(std::ostream& os, const Quad<T>& q) const noexcept {
+	return os << "{" << q.x << ", " << q.y << ", " << q.w << ", " << q.h << "}" ;
+}
+
+#endif
+
+#ifdef USE_ZUNIT_HELPER
+
 template <typename T, typename = EI<std::is_unsigned_v<T>>> 
 constexpr T rangeCtrl(T val) noexcept { 
 	return val > 255 ? 255 : val ; 
 }
+
+#endif
 
 template <typename T, typename = EI<std::is_unsigned_v<T>>> 
 struct Color {
@@ -547,10 +582,7 @@ struct Color {
 	}
 
 	template <typename U, typename = EI<std::is_unsigned_v<U>>> 
-	constexpr Color(U r, U g, U b, U a = 0) noexcept : 	r(rangeCtrl(static_cast<T>(r))), 
-														g(rangeCtrl(static_cast<T>(g))), 
-														b(rangeCtrl(static_cast<T>(b))), 
-														a(rangeCtrl(static_cast<T>(a))) {}
+	constexpr Color(U r, U g, U b, U a = 0) noexcept : 	r(rangeCtrl(static_cast<T>(r))), g(rangeCtrl(static_cast<T>(g))), b(rangeCtrl(static_cast<T>(b))), a(rangeCtrl(static_cast<T>(a))) {}
 
 	template <typename U> constexpr Color(const Color<U>& o) noexcept : r(o.r), g(o.g), b(o.b), a(o.a) {}
 
@@ -757,8 +789,18 @@ constexpr auto operator/(U v, const Color<T>& a) noexcept -> Color<CT<T, U>> {
 	} ; 
 }
 
+#ifdef ZUNIT_DEBUG
+
+template <typename T> 
+std::ostream& operator<<(std::ostream& os, const Color<T>& c) const noexcept {
+	return os << "{" << c.r << ", " << c.g << ", " << c.b << ", " << c.a << "}" ;
+}
+
+#endif
 
 using Size = Point<uint> ;
 using Pos = Point<uint> ;
 using Rect = Quad<uint> ;
 using RGBA = Color<uchar> ;
+
+#undef USE_ZUNIT_HELPER

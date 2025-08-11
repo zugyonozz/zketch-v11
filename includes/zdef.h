@@ -2,7 +2,10 @@
 
 #include <windows.h>
 #include <string>
-#include <cstring>
+
+#define USE_Z_ALIAS
+
+#ifdef USE_Z_ALIAS
 
 using uchar		= unsigned char ;
 using schar		= signed char ;
@@ -16,6 +19,8 @@ using ullong	= unsigned long long ;
 using sllong	= long long ;
 using cstr		= const char* ;
 using str		= std::string ;
+
+#endif
 
 struct WinFg {
 	enum : uint {
@@ -37,3 +42,5 @@ struct WinFg {
 		return static_cast<int>(fg) ; 
 	}
 } ;
+
+#undef USE_Z_ALIAS

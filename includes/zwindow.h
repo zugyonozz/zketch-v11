@@ -4,6 +4,8 @@
 #include <unordered_map>
 #include <queue>
 
+#define USE_Z_ALIAS
+
 namespace error_handler {
 	struct register_class_failed { cstr what() const noexcept { return "Failed to register window class" ; } } ;
 	struct create_window_failed { cstr what() const noexcept { return "Failed to create window" ; } } ;
@@ -12,9 +14,14 @@ namespace error_handler {
 class Window {
 private :
 
+	#ifdef USE_Z_ALIAS
+
 	using HWNDM = std::unordered_map<HWND, Window*> ;
 	using QE = std::queue<Event> ;
 
+	#endif
+
+// non-static member
 	HWND m_hwnd = nullptr ;
 	HINSTANCE m_hInstance = nullptr ;
 	Rect m_bound ;
@@ -22,19 +29,25 @@ private :
 	bool m_shouldclose = false ;
 	QE m_events ;
 	str WID = getWID() ;
+
+// static member
 	static inline schar nwindow = 0 ;
-#ifdef USEGLOBEV 
-	static inline QE GlobalEvents ; 
-#endif
 	static inline HWNDM hwndmap ;
 
-	static str getWID() {
+	#ifdef USEGLOBEV 
+
+	static inline QE GlobalEvents ; 
+	
+	#endif
+
+	static str getWID() noexcept {
 		static uchar baseWID = 0 ;
 		return std::to_string(baseWID++) ;
 	}
 
 	bool registerWindowClass() {
 		WNDCLASSEX wc = {} ;
+
 		wc.cbSize = sizeof(WNDCLASSEX) ;
 		wc.style = CS_HREDRAW | CS_VREDRAW ;
 		wc.lpfnWndProc = initEventHandler ;
@@ -47,6 +60,7 @@ private :
         wc.lpszMenuName = nullptr ;
         wc.lpszClassName = WID.c_str() ;
         wc.hIconSm = LoadIcon(nullptr, IDI_APPLICATION) ;
+
 		if (!RegisterClassEx(&wc)) {
             if (GetLastError() != ERROR_CLASS_ALREADY_EXISTS) {
                 throw error_handler::register_class_failed() ;
@@ -77,91 +91,163 @@ private :
 
 		hwndmap[m_hwnd] = this ;
 		nwindow++ ;
-#ifdef ZEVRECEIVE 
+
+		#ifdef ZWINDOW_DEBUG
+		#if defined(EVENT_RECEIVE) || defined (DEBUG_ALL)
+
 		printf("Window [%s] created. Total count: %d\n", m_title, nwindow) ;
-#endif
+
+		#endif
+		#endif
 	}
 
-	void destroy() {
-#ifdef ZEVRECEIVE
+	void destroy() noexcept {
+
+		#ifdef ZWINDOW_DEBUG
+		#if defined(EVENT_RECEIVE) || defined (DEBUG_ALL)
+
 		printf("Destroying window [%s]\n", m_title) ;
-#endif
+		
+		#endif
+		#endif
+
         if (m_hwnd) {
-			// hwndmap.erase(m_hwnd) ;
             DestroyWindow(m_hwnd) ;
             m_hwnd = nullptr ;
         }
+
         if (m_hInstance) 
             UnregisterClass(WID.c_str(), m_hInstance) ;
     }
 
 	LRESULT HandleMsg(HWND hwnd, uint msg, WPARAM wp, LPARAM lp) noexcept {
-#ifdef ZEVRECEIVE
+
+		#ifdef ZWINDOW_DEBUG
+		#if defined(EVENT_RECEIVE) || defined (DEBUG_ALL)
+		
 		printf("Window [%s] received message: 0x%X\n", m_title, msg) ;
-#endif
+		
+		#endif
+		#endif
+
 		Event event = translateWinEvent(hwnd, msg, wp, lp) ;
         if (event.type != EventType::None) {
             m_events.push(event) ;
-#ifdef ZEVRECEIVE
+
+		#ifdef ZWINDOW_DEBUG
+		#if defined(EVENT_RECEIVE) || defined (DEBUG_ALL)
+
 		printf("Event type %d pushed to window [%s]\n", (int)event.type, m_title) ;
-#endif
-#ifdef USEGLOBEV 
+		
+		#endif
+		#endif
+
+		#ifdef USEGLOBEV 
 			GlobalEvents.push(event) ; 
-#endif
+		#endif
+
 		}
+
         switch (msg) {
             case WM_CLOSE :
-#ifdef ZEVRECEIVE
+
+				#ifdef ZWINDOW_DEBUG
+				#if defined(EVENT_RECEIVE) || defined (DEBUG_ALL)
+
 				printf("WM_CLOSE received by window [%s]\n", m_title) ;
-#endif
+
+				#endif
+				#endif
+
 				destroy() ;
                 m_shouldclose = true ;
                 return 0 ;
 
             case WM_DESTROY : {
-#ifdef ZEVRECEIVE
+
+				#ifdef ZWINDOW_DEBUG
+				#if defined(EVENT_RECEIVE) || defined (DEBUG_ALL)
+
 				printf("WM_DESTROY received by window [%s]\n", m_title) ;
-#endif
+
+				#endif
+				#endif
+
                 auto it = hwndmap.find(hwnd) ;
 				if (it != hwndmap.end()) 
                     hwndmap.erase(it) ;
+
 				if (nwindow > 0) 
 					nwindow-- ;
-#ifdef ZEVRECEIVE
+
+				#ifdef ZWINDOW_DEBUG
+				#if defined(EVENT_RECEIVE) || defined (DEBUG_ALL)
+
 				printf("Remaining window count: %d\n", (int)nwindow) ;
-#endif
+
+				#endif
+				#endif
+
                 if (nwindow <= 0) {
-#ifdef ZEVRECEIVE
+
+					#ifdef ZWINDOW_DEBUG
+					#if defined(EVENT_RECEIVE) || defined (DEBUG_ALL)
+
 					printf("Last window destroyed, calling PostQuitMessage\n") ;
-#endif
+
+					#endif
+					#endif
+
                     PostQuitMessage(0) ;
 				}
+
                 return 0 ;
 			}
+			
             case WM_SIZE :
-#ifdef ZEVRECEIVE
+
+				#ifdef ZWINDOW_DEBUG
+				#if defined(EVENT_RECEIVE) || defined (DEBUG_ALL)
+
 				printf("WM_SIZE received by window [%s]\n", m_title) ;
-#endif
+
+				#endif
+				#endif
+				
                 m_bound.setSize(LOWORD(lp), HIWORD(lp)) ;
                 break ;
 
             case WM_MOVE :
-#ifdef ZEVRECEIVE
+
+				#ifdef ZWINDOW_DEBUG
+				#if defined(EVENT_RECEIVE) || defined (DEBUG_ALL)
+
 				printf("WM_MOVE received by window [%s]\n", m_title) ;
-#endif
+
+				#endif
+				#endif
+
                 m_bound.setPos(LOWORD(lp), HIWORD(lp)) ;
                 break ;
 
             case WM_PAINT : {
-#ifdef ZEVRECEIVE
+
+				#ifdef ZWINDOW_DEBUG
+				#if defined(EVENT_RECEIVE) || defined (DEBUG_ALL)
+
 				printf("WM_PAINT received by window [%s]\n", m_title) ;
-#endif
+
+				#endif
+				#endif
+
                 PAINTSTRUCT ps ;
                 HDC hdc = BeginPaint(hwnd, &ps) ;
                 RECT rect  ;
+
                 GetClientRect(hwnd, &rect) ;
                 FillRect(hdc, &rect, (HBRUSH)GetStockObject(BLACK_BRUSH)) ;
                 EndPaint(hwnd, &ps) ;
+
                 return 0 ;
             }
         }
@@ -171,13 +257,19 @@ private :
 
 	static LRESULT CALLBACK initEventHandler(HWND hwnd, uint msg, WPARAM wp, LPARAM lp) noexcept {
 		Window* w = nullptr ;
+
 		if (msg == WM_NCCREATE) {
+
 			CREATESTRUCT* cs = reinterpret_cast<CREATESTRUCT*>(lp) ;
 			w = reinterpret_cast<Window*>(cs->lpCreateParams) ;
+
 			SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(w)) ;
+
 			hwndmap[hwnd] = w ;
+
 		} else 
 			w = reinterpret_cast<Window*>(GetWindowLongPtr(hwnd, GWLP_USERDATA)) ;
+
 		if (w)
 			return w->HandleMsg(hwnd, msg, wp, lp) ;
 
@@ -189,103 +281,208 @@ public :
 	Window& operator=(const Window&) = delete ;
 
 	Window(cstr title, uint width, uint height, uint pos_x = 0U, uint pos_y = 0U) noexcept : m_bound(pos_x, pos_y, width, height), m_title(title), m_hInstance(GetModuleHandle(nullptr)) {
-		registerWindowClass();
-        createWindow();
-        SetWindowLongPtr(m_hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+		registerWindowClass() ;
+        createWindow() ;
+        SetWindowLongPtr(m_hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this)) ;
 	}
 
 	Window(cstr title, const Size& size) noexcept : m_bound(Pos{}, size), m_title(title), m_hInstance(GetModuleHandle(nullptr)) {
-		registerWindowClass();
-        createWindow();
-        SetWindowLongPtr(m_hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+		registerWindowClass() ;
+        createWindow() ;
+        SetWindowLongPtr(m_hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this)) ;
 	}
 
 	Window(cstr title, const Size& size, const Pos& pos) noexcept : m_bound(pos, size), m_title(title), m_hInstance(GetModuleHandle(nullptr)) {
-		registerWindowClass();
-        createWindow();
-        SetWindowLongPtr(m_hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+		registerWindowClass() ;
+        createWindow() ;
+        SetWindowLongPtr(m_hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this)) ;
 	}
 
 	Window(cstr title, const RECT& bound) noexcept : m_bound(bound), m_title(title), m_hInstance(GetModuleHandle(nullptr)) {
-		registerWindowClass();
-        createWindow();
-        SetWindowLongPtr(m_hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+		registerWindowClass() ;
+        createWindow() ;
+        SetWindowLongPtr(m_hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this)) ;
 	}
 
 	Window(cstr title, const Rect& bound) noexcept : m_bound(bound), m_title(title), m_hInstance(GetModuleHandle(nullptr)) {
-		registerWindowClass();
-        createWindow();
-        SetWindowLongPtr(m_hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+		registerWindowClass() ;
+        createWindow() ;
+        SetWindowLongPtr(m_hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this)) ;
 	}
 
 	Window(Window&& o) noexcept : m_hwnd(o.m_hwnd), m_hInstance(o.m_hInstance), m_bound(o.m_bound), m_title(std::move(o.m_title)) {
 		o.m_hwnd = nullptr ;
 		o.m_hInstance = nullptr ;
-		if (m_hwnd) SetWindowLongPtr(m_hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this)) ;
+		if (m_hwnd) 
+			SetWindowLongPtr(m_hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this)) ;
 	}
 
 	Window& operator=(Window&& o) noexcept {
 		if (this != &o) {
+
 			m_hwnd = o.m_hwnd ;
 			m_hInstance = o.m_hInstance ;
 			m_bound = o.m_bound ;
 			m_title = std::move(o.m_title) ;
+
 			o.m_hwnd = nullptr ;
 			o.m_hInstance = nullptr ;
-			if (m_hwnd) SetWindowLongPtr(m_hwnd, GWLP_USERDATA, reinterpret_cast<sllong>(this)) ;
+
+			if (m_hwnd) 
+				SetWindowLongPtr(m_hwnd, GWLP_USERDATA, reinterpret_cast<sllong>(this)) ;
 		}
+
 		return *this ;
 	}
 
 	~Window() noexcept { destroy() ; }
 
-	void show() { ShowWindow(m_hwnd, WinFg::SHOW) ; UpdateWindow(m_hwnd) ; }
-	void hide() { ShowWindow(m_hwnd, WinFg::HIDE) ; }
-    void minimize() { ShowWindow(m_hwnd, WinFg::MINIMIZE) ; }
-    void maximize() { ShowWindow(m_hwnd, WinFg::MAXIMIZE) ; }
-    void restore() { ShowWindow(m_hwnd, WinFg::RESTORE) ; }
-	HWND getHandle() const noexcept { return m_hwnd ; }
-	uint width() const noexcept { return m_bound.w ; }
-	uint height() const noexcept { return m_bound.h ; }
-	const auto Size() const noexcept { return m_bound.getSize() ; }
-	const auto Position() const noexcept { return m_bound.getPos() ; }
-	const auto& Bound() const noexcept { return m_bound ; } ;
-	cstr title() const noexcept { return m_title ; }
-    void setTitle(const char* title) noexcept { m_title = title ; SetWindowText(m_hwnd, title) ; }
-    template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>> void setSize(T w, T h) noexcept { SetWindowPos(m_hwnd, nullptr, 0, 0, (m_bound.w = w) , (m_bound.h = h), SWP_NOMOVE | SWP_NOZORDER) ; }
-    template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>> void setPosition(T x, T y) noexcept { SetWindowPos(m_hwnd, nullptr, (m_bound.x = x), (m_bound.y = y), 0 , 0, SWP_NOSIZE | SWP_NOZORDER) ; }
-	void setSize(const ::Size& size) noexcept { SetWindowPos(m_hwnd, nullptr, 0, 0, (m_bound.w = size.x) , (m_bound.h = size.y), SWP_NOMOVE | SWP_NOZORDER) ; }
-    void setPosition(const Pos& pos) noexcept { SetWindowPos(m_hwnd, nullptr, (m_bound.x = pos.x), (m_bound.y = pos.y), 0 , 0, SWP_NOSIZE | SWP_NOZORDER) ; }
-	void setBound(const Rect& bound) noexcept {SetWindowPos(m_hwnd, nullptr, (m_bound.x = bound.x), (m_bound.y = bound.y), (m_bound.w = bound.w) , (m_bound.h = bound.h), SWP_NOZORDER) ; }
-	bool shouldClose() const noexcept { return m_shouldclose ; }
-	void close() noexcept { m_shouldclose = true ; }
-	bool isValid() const noexcept { return m_hwnd && IsWindow(m_hwnd) ; }
-	void getClientSize(uint& w, uint& h) const noexcept { RECT r ; GetClientRect(m_hwnd, &r) ; w = r.right - r.left ; h = r.bottom - r.top ; }
-	::Size getClientSize() const noexcept { return getClientBound().getSize() ; }
-	Rect getClientBound() const noexcept { RECT r1 ; GetClientRect(m_hwnd, &r1) ; return Rect{Pos{}, ::Size{r1.right - r1.left, r1.bottom - r1.top}} ; }
-	bool hasEvents() const { return !m_events.empty() ; }
-	void clearEvents() { while (!m_events.empty()) m_events.pop() ; }
-	static int getWindowCount() { return nwindow ; }
-    static void quitApplication() { PostQuitMessage(0) ; }
+	void show() noexcept { 
+		ShowWindow(m_hwnd, WinFg::SHOW) ; 
+		UpdateWindow(m_hwnd) ; 
+	}
 
-	bool pollEvent(Event& e) {
+	void hide() noexcept { 
+		ShowWindow(m_hwnd, WinFg::HIDE) ; 
+	}
+
+    void minimize() { 
+		ShowWindow(m_hwnd, WinFg::MINIMIZE) ; 
+	}
+
+    void maximize() { 
+		ShowWindow(m_hwnd, WinFg::MAXIMIZE) ; 
+	}
+
+    void restore() { 
+		ShowWindow(m_hwnd, WinFg::RESTORE) ; 
+	}
+
+	HWND getHandle() const noexcept { 
+		return m_hwnd ; 
+	}
+
+	uint width() const noexcept { 
+		return m_bound.w ; 
+	}
+
+	uint height() const noexcept { 
+		return m_bound.h ; 
+	}
+
+	Pos Size() const noexcept { 
+		return m_bound.getSize() ; 
+	}
+
+	Pos Position() const noexcept { 
+		return m_bound.getPos() ; 
+	}
+
+	const Rect& Bound() const noexcept { 
+		return m_bound ; 
+	} ;
+
+	cstr title() const noexcept { 
+		return m_title ; 
+	}
+
+    void setTitle(const char* title) noexcept { 
+		m_title = title ; 
+		SetWindowText(m_hwnd, title) ; 
+	}
+
+    template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>> 
+	void setSize(T w, T h) noexcept { 
+		SetWindowPos(m_hwnd, nullptr, 0, 0, (m_bound.w = w) , (m_bound.h = h), SWP_NOMOVE | SWP_NOZORDER) ; 
+	}
+
+    template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>> 
+	void setPosition(T x, T y) noexcept { 
+		SetWindowPos(m_hwnd, nullptr, (m_bound.x = x), (m_bound.y = y), 0 , 0, SWP_NOSIZE | SWP_NOZORDER) ; 
+	}
+
+	void setSize(const ::Size& size) noexcept { 
+		SetWindowPos(m_hwnd, nullptr, 0, 0, (m_bound.w = size.x) , (m_bound.h = size.y), SWP_NOMOVE | SWP_NOZORDER) ; 
+	}
+
+    void setPosition(const Pos& pos) noexcept { 
+		SetWindowPos(m_hwnd, nullptr, (m_bound.x = pos.x), (m_bound.y = pos.y), 0 , 0, SWP_NOSIZE | SWP_NOZORDER) ; 
+	}
+
+	void setBound(const Rect& bound) noexcept { 
+		SetWindowPos(m_hwnd, nullptr, (m_bound.x = bound.x), (m_bound.y = bound.y), (m_bound.w = bound.w) , (m_bound.h = bound.h), SWP_NOZORDER) ; 
+	}
+
+	bool shouldClose() const noexcept { 
+		return m_shouldclose ; 
+	}
+
+	void close() noexcept { 
+		m_shouldclose = true ; 
+	}
+
+	bool isValid() const noexcept { 
+		return m_hwnd && IsWindow(m_hwnd) ; 
+	}
+
+	void getClientSize(uint& w, uint& h) const noexcept { 
+		RECT r ; 
+		GetClientRect(m_hwnd, &r) ; 
+		w = r.right - r.left ; 
+		h = r.bottom - r.top ; 
+	}
+
+	::Size getClientSize() const noexcept { 
+		return getClientBound().getSize() ; 
+	}
+
+	Rect getClientBound() const noexcept { 
+		RECT r1 ; 
+		GetClientRect(m_hwnd, &r1) ; 
+		return Rect{Pos{}, ::Size{r1.right - r1.left, r1.bottom - r1.top}} ; 
+	}
+
+	bool hasEvents() const { 
+		return !m_events.empty() ; 
+	}
+
+	void clearEvents() noexcept { 
+		while (!m_events.empty()) 
+			m_events.pop() ; 
+	}
+
+	static int getWindowCount() noexcept { 
+		return nwindow ; 
+	}
+
+    static void quitApplication() noexcept { 
+		PostQuitMessage(0) ; 
+	}
+
+
+	bool pollEvent(Event& e) noexcept {
         if (!m_events.empty()) {
+
             e = m_events.front();
             m_events.pop();
+
             return true;
         }
+
         return false;
     }
 
-	static bool pollEventFromWindow(HWND hwnd, Event& e) {
+	static bool pollEventFromWindow(HWND hwnd, Event& e) noexcept {
         auto it = hwndmap.find(hwnd);
-        if (it != hwndmap.end()) {
+
+        if (it != hwndmap.end()) 
             return it->second->pollEvent(e);
-        }
+
         return false;
     }
 
-#ifdef USEGLOBEV
+	#ifdef USE_GLOBAL_EVENT
+
 	static bool pollGlobalEvent(Event& e) {
         if (!GlobalEvents.empty()) {
             e = GlobalEvents.front();
@@ -294,52 +491,51 @@ public :
         }
         return false;
     }
-#endif
-
-    // void processMessage() noexcept {
-    //     MSG msg;
-    //     while (PeekMessage(&msg, m_hwnd, 0, 0, PM_REMOVE)) {
-    //         TranslateMessage(&msg);
-    //         DispatchMessage(&msg);
-    //     }
-    // }
+	#endif
 
 	static void processMessages() noexcept {
         MSG msg;
+
         while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
     }
 	
-	void centerOnScreen() {
+	void centerOnScreen() noexcept {
         ::Size screensize = {GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)} ;
         ::Size wsize = getClientSize() ;
+
         setPosition((screensize - wsize) / 2) ;
     }
 
-	bool containsPoint(Point<uint> pt) const {
+	bool containsPoint(Point<uint> pt) const noexcept {
         Rect b = getClientBound();
-        return 	pt.x >= b.x && 
-				pt.x < b.x + b.w && 
-				pt.y >= b.y && 
-				pt.y < b.y + b.h ;
+        return pt.x >= b.x && pt.x < b.x + b.w && pt.y >= b.y && pt.y < b.y + b.h ;
     }
 
-	Point<uint> screenToClient(Point<uint> pos) const {
+	Pos screenToClient(Pos pos) const noexcept {
         POINT pt = static_cast<POINT>(pos) ;
         ScreenToClient(m_hwnd, &pt) ;
-        return Point<uint>(pt.x, pt.y) ;
+
+        return Pos(pt.x, pt.y) ;
     }
 
-    Point<uint> clientToScreen(Point<uint> pos) const {
+    Pos clientToScreen(Pos pos) const {
         POINT pt = static_cast<POINT>(pos) ;
+
         ClientToScreen(m_hwnd, &pt) ;
-        return Point<uint>(pt.x, pt.y) ;
+        return Pos(pt.x, pt.y) ;
     }
-#ifdef ZWINDOWDEBUG
+
+	#ifdef ZWINDOW_DEBUG
+
 	uint getEventCount() const {
         return m_events.size() ;
     }
-#endif
+
+	#endif
+
 } ;
+
+#undef USE_Z_ALIAS
