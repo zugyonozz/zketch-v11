@@ -14,7 +14,7 @@ namespace error_handler {
 class Window {
 private :
 
-	using HM = std::unordered_map<HWND, Window*> ;
+	using HWNDM = std::unordered_map<HWND, Window*> ;
 
 	HWND m_hwnd = nullptr ;
 	HINSTANCE m_hInstance = nullptr ;
@@ -23,7 +23,7 @@ private :
 	bool m_shouldclose = false ;
 	static inline QE m_events ;
 	str WID = getWID() ;
-	static inline HM hm ;
+	static inline HWNDM hwndmap ;
 
 	static str getWID() {
 		static uchar baseWID = 0 ;
@@ -72,7 +72,7 @@ private :
 		if (!m_hwnd)
 			throw error_handler::create_window_failed() ;
 
-		hm[m_hwnd] = this ;
+		hwndmap[m_hwnd] = this ;
 	}
 
 	void destroy() {
@@ -126,7 +126,7 @@ private :
 			CREATESTRUCT* cs = reinterpret_cast<CREATESTRUCT*>(lp) ;
 			w = reinterpret_cast<Window*>(cs->lpCreateParams) ;
 			SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(w)) ;
-			hm[hwnd] = w ;
+			hwndmap[hwnd] = w ;
 		} else 
 			w = reinterpret_cast<Window*>(GetWindowLongPtr(hwnd, GWLP_USERDATA)) ;
 		if (w)
@@ -230,6 +230,12 @@ public :
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
+    }
+
+	static void processMessages() noexcept {
+        for (auto& w : hwndmap) {
+			w.second->processMessage() ;
+		}
     }
 	
 	void centerOnScreen() {

@@ -1,4 +1,4 @@
-#include "Windows API/Model/z_window.h"
+#include "../includes/zwindow.h"
 
 int main() {
 	Window w1("Z Framework Demo", Point<uint>{800, 600}) ;
@@ -6,6 +6,7 @@ int main() {
 	w1.centerOnScreen() ;
 
 	while (!w1.shouldClose()) {
+		Window::processMessages() ;
 		Event ev ;
 		while (Window::pollEvent(ev)) {
 			if (ev.type == EventType::Quit)
