@@ -1,7 +1,9 @@
 #include <iostream>
 #include "../includes/zwindow.h"
+#include "../includes/ztimer.h"
 
 int main() {
+	Timer t ;
 	Window w1("Window 1", Size{800, 600}) ;
 	Window w2("Window 2", Size{800, 600}) ;
 	w1.show() ;
@@ -24,5 +26,6 @@ int main() {
 			if (ev2.type == EventType::MouseMove)
 				std::cout << "Window 2\t: {" << ev2.getMousePosition().x << ", " << ev2.getMousePosition().y << "}\n" ;
 		}
+		t.delay(16) ;
 	}
 }

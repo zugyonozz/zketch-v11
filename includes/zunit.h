@@ -29,7 +29,7 @@ constexpr T uclamp(T val, T lim) noexcept {
 
 template <typename T, typename = EI<std::is_arithmetic_v<T>>> 
 struct Point {
-    T x, y;
+    T x, y ;
 
     constexpr Point() noexcept : x(0), y(0) {}
 	
