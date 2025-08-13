@@ -18,15 +18,6 @@ using CT = std::common_type_t<Ts...> ;
 
 #endif
 
-#ifdef USE_ZUNIT_HELPER
-
-template <typename T, typename = EI<std::is_unsigned_v<T>>> 
-constexpr T uclamp(T val, T lim) noexcept { 
-	return val > lim ? lim : val ; 
-}
-
-#endif
-
 template <typename T, typename = EI<std::is_arithmetic_v<T>>> 
 struct Point {
     T x, y ;
@@ -563,237 +554,214 @@ std::ostream& operator<<(std::ostream& os, const Quad<T>& q) const noexcept {
 
 #ifdef USE_ZUNIT_HELPER
 
-template <typename T, typename = EI<std::is_unsigned_v<T>>> 
-constexpr T rangeCtrl(T val) noexcept { 
-	return val > 255 ? 255 : val ; 
+constexpr uchar cclamp(uchar val, uchar lim) noexcept { 
+	return val > lim ? lim : val ; 
 }
 
 #endif
 
-template <typename T, typename = EI<std::is_unsigned_v<T>>> 
-struct Color {
-	T r, g, b, a ;
+class Color {
+private :
+	union C {
+		uint d = 0 ;
+		uchar b[sizeof(uint)] ;
+	} c ;
 
-	constexpr Color() noexcept : r(0), g(0), b(0), a(0) {}
+public :
+	enum elements : uchar { A, B, G, R } ;
 
-	template <typename U, typename = EI<std::is_integral_v<U>>> 
-	constexpr Color(U v) noexcept { 
-		*this = translateRGBA<T>(static_cast<uint>(v)) ; 
+	constexpr Color() noexcept : c{} {}
+
+	constexpr Color(COLORREF d) noexcept { 
+		c.d = d ;
 	}
 
-	template <typename U, typename = EI<std::is_unsigned_v<U>>> 
-	constexpr Color(U r, U g, U b, U a = 0) noexcept : 	r(rangeCtrl(static_cast<T>(r))), g(rangeCtrl(static_cast<T>(g))), b(rangeCtrl(static_cast<T>(b))), a(rangeCtrl(static_cast<T>(a))) {}
+	constexpr Color(uchar r, uchar g, uchar b, uchar a = 0) noexcept : c{} {
+		c.b[0] = a ;
+		c.b[1] = b ;
+		c.b[2] = g ;
+		c.b[3] = r ;
+	}
 
-	template <typename U> constexpr Color(const Color<U>& o) noexcept : r(o.r), g(o.g), b(o.b), a(o.a) {}
+	constexpr Color(const Color& o) noexcept : c(o.c) {}
 
     constexpr Color& operator=(COLORREF v) noexcept { 
-		Color c = translateRGBA<uchar>(v) ; 
-		r = c.r ; 
-		g = c.g ; 
-		b = c.b ; 
-		a = c.a ; 
+		c.d = static_cast<uint>(v) ;
 		return *this ; 
 	}
 
-	template <typename U> 
-	constexpr Color& operator=(const Color<U>& o) noexcept { 
-		r = o.r ; 
-		g = o.g ; 
-		b = o.b ; 
-		a = o.a ; 
+	constexpr Color& operator=(const Color& o) noexcept { 
+		c = o.c ;
 		return *this ; 
 	}
 
-	template <typename U> 
-	constexpr Color& operator+=(const Color<U>& o) noexcept { 
-		r = rangeCtrl(r + static_cast<T>(o.r)) ; 
-		g = rangeCtrl(g + static_cast<T>(o.g)) ; 
-		b = rangeCtrl(b + static_cast<T>(o.b)) ; 
-		a = rangeCtrl(a + static_cast<T>(o.a)) ; 
+	constexpr Color& operator+=(const Color& o) noexcept { 
+		c.b[0] = cclamp(c.b[0] + o.c.b[0], 255) ;
+		c.b[1] = cclamp(c.b[1] + o.c.b[1], 255) ;
+		c.b[2] = cclamp(c.b[2] + o.c.b[2], 255) ;
+		c.b[3] = cclamp(c.b[3] + o.c.b[3], 255) ;
 		return *this ; 
 	}
 
-    template <typename U> 
-	constexpr Color& operator-=(const Color<U>& o) noexcept { 
-		r = (r > o.r) ? r - static_cast<T>(o.r) : 0 ; 
-		g = (g > o.g) ? g - static_cast<T>(o.g) : 0 ; 
-		b = (b > o.b) ? b - static_cast<T>(o.b) : 0 ; 
-		a = (a > o.a) ? a - static_cast<T>(o.a) : 0 ; 
+	constexpr Color& operator-=(const Color& o) noexcept { 
+		c.b[0] = (c.b[0] > o.c.b[0]) ? c.b[0] - o.c.b[0] : 0 ;
+		c.b[1] = (c.b[1] > o.c.b[1]) ? c.b[1] - o.c.b[1] : 0 ;
+		c.b[2] = (c.b[2] > o.c.b[2]) ? c.b[2] - o.c.b[2] : 0 ;
+		c.b[3] = (c.b[3] > o.c.b[3]) ? c.b[3] - o.c.b[3] : 0 ;
 		return *this ; 
 	}
 
-    template <typename U> 
-	constexpr Color& operator*=(const Color<U>& o) noexcept { 
-		r = rangeCtrl(r * static_cast<T>(o.r)) ; 
-		g = rangeCtrl(g * static_cast<T>(o.g)) ; 
-		b = rangeCtrl(b * static_cast<T>(o.b)) ; 
-		a = rangeCtrl(a * static_cast<T>(o.a)) ; 
+	constexpr Color& operator*=(const Color& o) noexcept { 
+		c.b[0] = cclamp(c.b[0] * o.c.b[0], 255) ;
+		c.b[1] = cclamp(c.b[1] * o.c.b[1], 255) ;
+		c.b[2] = cclamp(c.b[2] * o.c.b[2], 255) ;
+		c.b[3] = cclamp(c.b[3] * o.c.b[3], 255) ;
 		return *this ; 
 	}
 
-    template <typename U> 
-	constexpr Color& operator/=(const Color<U>& o) noexcept { 
-		if (o.r != 0) 
-			r /= static_cast<T>(o.r) ; 
-		if (o.g != 0) 
-			g /= static_cast<T>(o.g) ; 
-		if (o.b != 0) 
-			b /= static_cast<T>(o.b) ; 
-		if (o.a != 0) 
-			a /= static_cast<T>(o.a) ; 
+	constexpr Color& operator/=(const Color& o) noexcept { 
+		if (o.c.b[0] != 0) 
+			c.b[0] /= o.c.b[0] ; 
+		if (o.c.b[1] != 0) 
+			c.b[1] /= o.c.b[1] ; 
+		if (o.c.b[2] != 0) 
+			c.b[2] /= o.c.b[2] ; 
+		if (o.c.b[3] != 0) 
+			c.b[3] /= o.c.b[3] ; 
 		return *this ; 
 	}
 
-	template <typename U, typename = EI<std::is_arithmetic_v<U>>> 
-	static constexpr uint makeColor(U r = 0, U g = 0, U b = 0, U a = 0) noexcept { 
-		auto cr = static_cast<uint>(std::clamp(r, 0, 255)) ; 
-		auto cg = static_cast<uint>(std::clamp(g, 0, 255)) ; 
-		auto cb = static_cast<uint>(std::clamp(b, 0, 255)) ; 
-		auto ca = static_cast<uint>(std::clamp(a, 0, 255)) ; 
-		return ca << 24 | cb << 16 | cg << 8 | cr ; 
+	constexpr uchar& operator[](elements e) noexcept {
+		return c.b[e] ;
 	}
 
-	template <typename U, typename = EI<std::is_unsigned_v<U>>> 
-	static constexpr Color<U> translateRGBA(uint src) noexcept { 
-		return Color<U>{ 
-			static_cast<U>(src & 0xFF), 
-			static_cast<U>((src >> 8) & 0xFF), 
-			static_cast<U>((src >> 16) & 0xFF), 
-			static_cast<U>((src >> 24) & 0xFF) 
-		} ; 
+	constexpr const uchar& operator[](elements e) const noexcept {
+		return c.b[e] ;
+	}
+
+	constexpr uchar& operator[](uchar i) noexcept {
+		return c.b[i] ;
+	}
+
+	constexpr const uchar& operator[](uchar i) const noexcept {
+		return c.b[i] ;
 	}
 
 	constexpr explicit operator COLORREF() const noexcept { 
-		return makeColor(r, g, b) ; 
+		return c.d ; 
 	} 
 
-	constexpr T& alpha() noexcept { 
-		return a ; 
+	constexpr uchar& alpha() noexcept { 
+		return c.b[0] ; 
 	} 
 
-	constexpr const T& alpha() const noexcept { 
-		return a ; 
+	constexpr const uchar& alpha() const noexcept { 
+		return c.b[0] ; 
 	} 
-
 } ;
 
-template <typename T, typename U> 
-constexpr auto operator+(const Color<T>& a, const Color<U>& b) noexcept -> Color<CT<T, U>> { 
-	return Color<CT<T, U>>{ 
-		uclamp(static_cast<CT<T, U>>(a.r) + static_cast<CT<T, U>>(b.r), static_cast<CT<T, U>>(255)), 
-		uclamp(static_cast<CT<T, U>>(a.g) + static_cast<CT<T, U>>(b.g), static_cast<CT<T, U>>(255)), 
-		uclamp(static_cast<CT<T, U>>(a.b) + static_cast<CT<T, U>>(b.b), static_cast<CT<T, U>>(255)), 
-		uclamp(static_cast<CT<T, U>>(a.a) + static_cast<CT<T, U>>(b.a), static_cast<CT<T, U>>(255)) 
-	} ; 
-}
-template <typename T, typename U> 
-constexpr auto operator-(const Color<T>& a, const Color<U>& b) noexcept -> Color<CT<T, U>> { 
-	return Color<CT<T, U>>{ 
-		(a.r > b.r) ? static_cast<CT<T, U>>(a.r - b.r) : static_cast<CT<T, U>>(0), 
-		(a.g > b.g) ? static_cast<CT<T, U>>(a.g - b.g) : static_cast<CT<T, U>>(0), 
-		(a.b > b.b) ? static_cast<CT<T, U>>(a.b - b.b) : static_cast<CT<T, U>>(0), 
-		(a.a > b.a) ? static_cast<CT<T, U>>(a.a - b.a) : static_cast<CT<T, U>>(0) 
-	} ; 
-}
-template <typename T, typename U> 
-constexpr auto operator*(const Color<T>& a, const Color<U>& b) noexcept -> Color<CT<T, U>> { 
-	return Color<CT<T, U>>{ 
-		uclamp(static_cast<CT<T, U>>(a.r) * static_cast<CT<T, U>>(b.r), static_cast<CT<T, U>>(255)), 
-		uclamp(static_cast<CT<T, U>>(a.g) * static_cast<CT<T, U>>(b.g), static_cast<CT<T, U>>(255)), 
-		uclamp(static_cast<CT<T, U>>(a.b) * static_cast<CT<T, U>>(b.b), static_cast<CT<T, U>>(255)), 
-		uclamp(static_cast<CT<T, U>>(a.a) * static_cast<CT<T, U>>(b.a), static_cast<CT<T, U>>(255)) 
-	} ; 
-}
-template <typename T, typename U> 
-constexpr auto operator/(const Color<T>& a, const Color<U>& b) noexcept -> Color<CT<T, U>> { 
-	return Color<CT<T, U>>{ 
-		(b.r != 0) ? static_cast<CT<T, U>>(a.r / b.r) : static_cast<CT<T, U>>(0), 
-		(b.g != 0) ? static_cast<CT<T, U>>(a.g / b.g) : static_cast<CT<T, U>>(0), 
-		(b.b != 0) ? static_cast<CT<T, U>>(a.b / b.b) : static_cast<CT<T, U>>(0), 
-		(b.a != 0) ? static_cast<CT<T, U>>(a.a / b.a) : static_cast<CT<T, U>>(0) 
-	} ; 
-}
-template <typename T, typename U, typename = EI<std::is_arithmetic_v<U>>> 
-constexpr auto operator+(const Color<T>& a, U v) noexcept -> Color<CT<T, U>> { 
-	auto val = static_cast<CT<T, U>>(v) ; 
-	return Color<CT<T, U>>{ 
-		uclamp(static_cast<CT<T, U>>(a.r) + val, static_cast<CT<T, U>>(255)), 
-		uclamp(static_cast<CT<T, U>>(a.g) + val, static_cast<CT<T, U>>(255)), 
-		uclamp(static_cast<CT<T, U>>(a.b) + val, static_cast<CT<T, U>>(255)), 
-		uclamp(static_cast<CT<T, U>>(a.a) + val, static_cast<CT<T, U>>(255)) 
+constexpr Color operator+(const Color& a, const Color& b) noexcept { 
+	return Color { 
+		cclamp(a[Color::R] + b[Color::R], 255), 
+		cclamp(a[Color::G] + b[Color::G], 255), 
+		cclamp(a[Color::B] + b[Color::B], 255), 
+		cclamp(a[Color::A] + b[Color::A], 255) 
 	} ; 
 }
 
-template <typename T, typename U, typename = EI<std::is_arithmetic_v<U>>> 
-constexpr auto operator-(const Color<T>& a, U v) noexcept -> Color<CT<T, U>> { 
-	auto val = static_cast<CT<T, U>>(v) ; 
-	return Color<CT<T, U>>{ 
-		(a.r > val) ? static_cast<CT<T, U>>(a.r - val) : static_cast<CT<T, U>>(0), 
-		(a.g > val) ? static_cast<CT<T, U>>(a.g - val) : static_cast<CT<T, U>>(0), 
-		(a.b > val) ? static_cast<CT<T, U>>(a.b - val) : static_cast<CT<T, U>>(0), 
-		(a.a > val) ? static_cast<CT<T, U>>(a.a - val) : static_cast<CT<T, U>>(0) 
+constexpr Color operator-(const Color& a, const Color& b) { 
+	return Color { 
+		(a[Color::R] > b[Color::R]) ? static_cast<uchar>(a[Color::R] - b[Color::R]) : static_cast<uchar>(0), 
+		(a[Color::G] > b[Color::G]) ? static_cast<uchar>(a[Color::G] - b[Color::G]) : static_cast<uchar>(0), 
+		(a[Color::B] > b[Color::B]) ? static_cast<uchar>(a[Color::B] - b[Color::B]) : static_cast<uchar>(0), 
+		(a[Color::A] > b[Color::A]) ? static_cast<uchar>(a[Color::A] - b[Color::A]) : static_cast<uchar>(0) 
 	} ; 
 }
 
-template <typename T, typename U, typename = EI<std::is_arithmetic_v<U>>> 
-constexpr auto operator*(const Color<T>& a, U v) noexcept -> Color<CT<T, U>> { 
-	auto val = static_cast<CT<T, U>>(v) ; 
-	return Color<CT<T, U>>{ 
-		uclamp(static_cast<CT<T, U>>(a.r) * val, static_cast<CT<T, U>>(255)), 
-		uclamp(static_cast<CT<T, U>>(a.g) * val, static_cast<CT<T, U>>(255)), 
-		uclamp(static_cast<CT<T, U>>(a.b) * val, static_cast<CT<T, U>>(255)), 
-		uclamp(static_cast<CT<T, U>>(a.a) * val, static_cast<CT<T, U>>(255)) 
+constexpr Color operator*(const Color& a, const Color& b) noexcept  { 
+	return Color { 
+		cclamp(a[Color::R] * b[Color::R], 255), 
+		cclamp(a[Color::G] * b[Color::G], 255), 
+		cclamp(a[Color::B] * b[Color::B], 255), 
+		cclamp(a[Color::A] * b[Color::A], 255) 
 	} ; 
 }
 
-template <typename T, typename U, typename = EI<std::is_arithmetic_v<U>>> 
-constexpr auto operator/(const Color<T>& a, U v) noexcept -> Color<CT<T, U>> { 
-	auto val = static_cast<CT<T, U>>(v) ; 
-	return Color<CT<T, U>>{ 
-		(val != 0) ? static_cast<CT<T, U>>(a.r / val) : static_cast<CT<T, U>>(0), 
-		(val != 0) ? static_cast<CT<T, U>>(a.g / val) : static_cast<CT<T, U>>(0), 
-		(val != 0) ? static_cast<CT<T, U>>(a.b / val) : static_cast<CT<T, U>>(0), 
-		(val != 0) ? static_cast<CT<T, U>>(a.a / val) : static_cast<CT<T, U>>(0) 
+constexpr Color operator/(const Color& a, const Color& b) noexcept { 
+	return Color { 
+		(b[Color::R] != 0) ? static_cast<uchar>(a[Color::R] / b[Color::R]) : static_cast<uchar>(0), 
+		(b[Color::G] != 0) ? static_cast<uchar>(a[Color::G] / b[Color::G]) : static_cast<uchar>(0), 
+		(b[Color::B] != 0) ? static_cast<uchar>(a[Color::B] / b[Color::B]) : static_cast<uchar>(0), 
+		(b[Color::A] != 0) ? static_cast<uchar>(a[Color::A] / b[Color::A]) : static_cast<uchar>(0) 
 	} ; 
 }
 
-template <typename T, typename U, typename = EI<std::is_arithmetic_v<U>>> 
-constexpr auto operator+(U v, const Color<T>& a) noexcept -> Color<CT<T, U>> { 
+constexpr Color operator+(const Color& a, uchar v) noexcept { 
+	return Color { 
+		cclamp(a[Color::R] + v, 255), 
+		cclamp(a[Color::G] + v, 255), 
+		cclamp(a[Color::B] + v, 255), 
+		cclamp(a[Color::A] + v, 255) 
+	} ; 
+}
+
+constexpr Color operator-(const Color& a, uchar v) noexcept { 
+	return Color { 
+		(a[Color::R] > v) ? static_cast<uchar>(a[Color::R] - v) : static_cast<uchar>(0), 
+		(a[Color::G] > v) ? static_cast<uchar>(a[Color::G] - v) : static_cast<uchar>(0), 
+		(a[Color::B] > v) ? static_cast<uchar>(a[Color::B] - v) : static_cast<uchar>(0), 
+		(a[Color::A] > v) ? static_cast<uchar>(a[Color::A] - v) : static_cast<uchar>(0) 
+	} ; 
+}
+
+constexpr Color operator*(const Color& a, uchar v) noexcept { 
+	return Color { 
+		cclamp(a[Color::R] * v, 255), 
+		cclamp(a[Color::G] * v, 255), 
+		cclamp(a[Color::B] * v, 255), 
+		cclamp(a[Color::A] * v, 255) 
+	} ; 
+}
+
+constexpr Color operator/(const Color& a, uchar v) noexcept { 
+	return Color { 
+		(v != 0) ? static_cast<uchar>(a[Color::R] / v) : static_cast<uchar>(0), 
+		(v != 0) ? static_cast<uchar>(a[Color::G] / v) : static_cast<uchar>(0), 
+		(v != 0) ? static_cast<uchar>(a[Color::B] / v) : static_cast<uchar>(0), 
+		(v != 0) ? static_cast<uchar>(a[Color::A] / v) : static_cast<uchar>(0) 
+	} ; 
+}
+
+constexpr auto operator+(uchar v, const Color& a) noexcept { 
 	return a + v; 
 }
 
-template <typename T, typename U, typename = EI<std::is_arithmetic_v<U>>> 
-constexpr auto operator-(U v, const Color<T>& a) noexcept -> Color<CT<T, U>> { 
-	auto val = static_cast<CT<T, U>>(v) ; 
-	return Color<CT<T, U>>{ 
-		(val > a.r) ? static_cast<CT<T, U>>(val - a.r) : static_cast<CT<T, U>>(0), 
-		(val > a.g) ? static_cast<CT<T, U>>(val - a.g) : static_cast<CT<T, U>>(0), 
-		(val > a.b) ? static_cast<CT<T, U>>(val - a.b) : static_cast<CT<T, U>>(0), 
-		(val > a.a) ? static_cast<CT<T, U>>(val - a.a) : static_cast<CT<T, U>>(0) 
+constexpr auto operator-(uchar v, const Color& a) noexcept { 
+	return Color{ 
+		(v > a[Color::R]) ? static_cast<uchar>(v - a[Color::R]) : static_cast<uchar>(0), 
+		(v > a[Color::G]) ? static_cast<uchar>(v - a[Color::G]) : static_cast<uchar>(0), 
+		(v > a[Color::B]) ? static_cast<uchar>(v - a[Color::B]) : static_cast<uchar>(0), 
+		(v > a[Color::A]) ? static_cast<uchar>(v - a[Color::A]) : static_cast<uchar>(0) 
 	} ; 
 }
 
-template <typename T, typename U, typename = EI<std::is_arithmetic_v<U>>> 
-constexpr auto operator*(U v, const Color<T>& a) noexcept -> Color<CT<T, U>> { 
+constexpr auto operator*(uchar v, const Color& a) noexcept { 
 	return a * v; 
 }
 
-template <typename T, typename U, typename = EI<std::is_arithmetic_v<U>>> 
-constexpr auto operator/(U v, const Color<T>& a) noexcept -> Color<CT<T, U>> { 
-	auto val = static_cast<CT<T, U>>(v) ; 
-	return Color<CT<T, U>>{ 
-		(a.r != 0) ? static_cast<CT<T, U>>(val / a.r) : static_cast<CT<T, U>>(0), 
-		(a.g != 0) ? static_cast<CT<T, U>>(val / a.g) : static_cast<CT<T, U>>(0), 
-		(a.b != 0) ? static_cast<CT<T, U>>(val / a.b) : static_cast<CT<T, U>>(0), 
-		(a.a != 0) ? static_cast<CT<T, U>>(val / a.a) : static_cast<CT<T, U>>(0) 
+constexpr auto operator/(uchar v, const Color& a) noexcept { 
+	return Color{ 
+		(a[Color::R] != 0) ? static_cast<uchar>(v / a[Color::R]) : static_cast<uchar>(0), 
+		(a[Color::G] != 0) ? static_cast<uchar>(v / a[Color::G]) : static_cast<uchar>(0), 
+		(a[Color::B] != 0) ? static_cast<uchar>(v / a[Color::B]) : static_cast<uchar>(0), 
+		(a[Color::A] != 0) ? static_cast<uchar>(v / a[Color::A]) : static_cast<uchar>(0) 
 	} ; 
 }
 
 #ifdef ZUNIT_DEBUG
 
-template <typename T> 
-std::ostream& operator<<(std::ostream& os, const Color<T>& c) const noexcept {
-	return os << "{" << c.r << ", " << c.g << ", " << c.b << ", " << c.a << "}" ;
+std::ostream& operator<<(std::ostream& os, const Color& c) noexcept {
+	return os << "{" << static_cast<uint>(c[Color::R]) << ", " << static_cast<uint>(c[Color::G]) << ", " << static_cast<uint>(c[Color::B]) << ", " << static_cast<uint>(c[Color::A]) << "}" ;
 }
 
 #endif
@@ -801,6 +769,6 @@ std::ostream& operator<<(std::ostream& os, const Color<T>& c) const noexcept {
 using Size = Point<uint> ;
 using Pos = Point<uint> ;
 using Rect = Quad<uint> ;
-using RGBA = Color<uchar> ;
+using RGBA = Color ;
 
 #undef USE_ZUNIT_HELPER

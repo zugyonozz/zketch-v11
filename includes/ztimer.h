@@ -1,7 +1,9 @@
 #pragma once
-#include "zdef.h"
 
 #define USE_Z_ALIAS
+
+#include "zdef.h"
+
 #define USE_ZTIMER_HELPER
 
 #ifdef USE_ZTIMER_HELPER
