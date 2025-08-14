@@ -2,57 +2,44 @@
 
 #include <ostream>
 #include <algorithm>
+#include <vector>
 #include <type_traits>
 #include "zdef.h"
 
-#define USE_Z_ALIAS
 #define USE_ZUNIT_HELPER
 
-#ifdef USE_Z_ALIAS
-
-template <bool cond, typename T = void> 
-using EI = std::enable_if_t<cond, T> ;
-
-template <typename ... Ts> 
-using CT = std::common_type_t<Ts...> ;
-
-#endif
-
-template <typename T, typename = EI<std::is_arithmetic_v<T>>> 
 struct Point {
-    T x, y ;
+    sllong x = 0LL, y = 0LL ;
 
-    constexpr Point() noexcept : x(0), y(0) {}
+    constexpr Point() noexcept = default ;
+	constexpr Point(const Point&) noexcept = default ;
+	constexpr Point& operator=(const Point&) noexcept = default ;
 	
-	template <typename U, typename = EI<std::is_arithmetic_v<U>>> 
-	constexpr Point(U v) noexcept : x(v), y(v) {}
+	constexpr Point(sllong v) noexcept : x(v), y(v) {}
     
-	template <typename U, typename = EI<std::is_arithmetic_v<U>>> 
-	constexpr Point(U x, U y) noexcept : x(x), y(y) {}
-	
-    template <typename U> 
-	constexpr Point(const Point<U>& o) noexcept : x(static_cast<T>(o.x)), y(static_cast<T>(o.y)) {}
+	constexpr Point(sllong x, sllong y) noexcept : x(x), y(y) {}
 
-	constexpr Point(const tagPOINT& o) noexcept : x(static_cast<T>(o.x)), y(static_cast<T>(o.y)) {}
+	constexpr Point(const tagPOINT& o) noexcept : x(o.x), y(o.y) {}
 	
-	constexpr Point(const _POINTL& o) noexcept : x(static_cast<T>(o.x)), y(static_cast<T>(o.y)) {}
+	constexpr Point(const _POINTL& o) noexcept : x(o.x), y(o.y) {}
 	
-	constexpr Point(const tagSIZE& o) noexcept : x(static_cast<T>(o.cx)), y(static_cast<T>(o.cy)) {}
+	constexpr Point(const tagSIZE& o) noexcept : x(o.cx), y(o.cy) {}
 	
-	constexpr Point(const tagPOINTS& o) noexcept : x(static_cast<T>(o.x)), y(static_cast<T>(o.y)) {}
-	
+	constexpr Point(const tagPOINTS& o) noexcept : x(o.x), y(o.y) {}
 
-	template <typename U, typename = EI<std::is_arithmetic_v<U>>> 
-	constexpr Point& operator=(U v) noexcept { 
+	template <typename T, typename U, typename = std::enable_if_t<std::is_arithmetic_v<std::remove_cv_t<std::remove_reference_t<T>>> && std::is_arithmetic_v<std::remove_cv_t<std::remove_reference_t<U>>>>> 
+	constexpr Point(const std::pair<T&, U&>& p) noexcept : x(static_cast<sllong>(p.first)), y(static_cast<sllong>(p.second)) {}
+	
+	constexpr Point& operator=(sllong v) noexcept { 
 		x = y = v ; 
 		return *this ; 
 	}
-	
-	template <typename U> 
-	constexpr Point& operator=(const Point<U>& o) noexcept { 
-		x = o.x ; 
-		y = o.y ; 
-		return *this ; 
+
+	template <typename T, typename U, typename = std::enable_if_t<std::is_arithmetic_v<std::remove_cv_t<std::remove_reference_t<T>>> && std::is_arithmetic_v<std::remove_cv_t<std::remove_reference_t<U>>>>> 
+	constexpr Point& operator=(const std::pair<T&, U&>& p) noexcept {
+		x = static_cast<sllong>(p.first) ;
+		y = static_cast<sllong>(p.second) ;
+		return *this ;
 	}
 	
     constexpr Point operator+() const noexcept { 
@@ -60,60 +47,52 @@ struct Point {
 	}
 
     constexpr Point operator-() const noexcept { 
-		return {-x, -y} ; 
+		return {static_cast<sllong>(-x), static_cast<sllong>(-y)} ; 
 	}
 
-    template <typename U> 
-	constexpr Point& operator+=(const Point<U>& o) noexcept { 
+	constexpr Point& operator+=(const Point& o) noexcept { 
 		x += o.x ; 
 		y += o.y ; 
 		return *this ; 
 	}
 
-    template <typename U> 
-	constexpr Point& operator-=(const Point<U>& o) noexcept { 
+	constexpr Point& operator-=(const Point& o) noexcept { 
 		x -= o.x ; 
 		y -= o.y ; 
 		return *this ; 
 	}
 
-    template <typename U> 
-	constexpr Point& operator*=(const Point<U>& o) noexcept { 
+	constexpr Point& operator*=(const Point& o) noexcept { 
 		x *= o.x ; 
 		y *= o.y ; 
 		return *this ; 
 	}
 
-    template <typename U> 
-	constexpr Point& operator/=(const Point<U>& o) noexcept { 
+	constexpr Point& operator/=(const Point& o) noexcept { 
 		x /= o.x ; 
 		y /= o.y ; 
 		return *this ; 
 	}
 
-    template <typename U, typename = EI<std::is_arithmetic_v<U>>> 
-	constexpr Point& operator+=(U v) noexcept { 
+	constexpr Point& operator+=(sllong v) noexcept { 
 		x += v ; 
 		y += v ; 
 		return *this ; 
 	}
 
-    template <typename U, typename = EI<std::is_arithmetic_v<U>>> 
-	constexpr Point& operator-=(U v) noexcept { 
+	constexpr Point& operator-=(sllong v) noexcept { 
 		x -= v ; 
 		y -= v ; 
 		return *this ; 
 	}
 
-    template <typename U, typename = EI<std::is_arithmetic_v<U>>> 
-	constexpr Point& operator*=(U v) noexcept { 
+	constexpr Point& operator*=(sllong v) noexcept { 
 		x *= v ; 
 		y *= v ; 
 		return *this ; 
 	}
 
-    template <typename U, typename = EI<std::is_arithmetic_v<U>>> 
-	constexpr Point& operator/=(U v) noexcept { 
+	constexpr Point& operator/=(sllong v) noexcept { 
 		x /= v ; 
 		y /= v ; 
 		return *this ; 
@@ -127,28 +106,28 @@ struct Point {
 		return !(*this == o) ; 
 	}
 
-	explicit operator tagPOINT() const noexcept { 
+	operator tagPOINT() const noexcept { 
 		return {
 			static_cast<slong>(x), 
 			static_cast<slong>(y)
 		} ; 
 	}
 
-	explicit operator _POINTL() const noexcept { 
+	operator _POINTL() const noexcept { 
 		return {
 			static_cast<slong>(x), 
 			static_cast<slong>(y)
 		} ; 
 	}
 
-	explicit operator tagSIZE() const noexcept { 
+	operator tagSIZE() const noexcept { 
 		return {
 			static_cast<slong>(x), 
 			static_cast<slong>(y)
 		} ; 
 	}
 
-	explicit operator tagPOINTS() const noexcept { 
+	operator tagPOINTS() const noexcept { 
 		return {
 			static_cast<sshort>(x), 
 			static_cast<sshort>(y)
@@ -157,93 +136,81 @@ struct Point {
 
 } ;
 
-template <typename T, typename U> 
-constexpr auto operator+(const Point<T>& a, const Point<U>& b) noexcept -> Point<CT<T, U>> { 
+constexpr Point operator+(const Point& a, const Point& b) noexcept  { 
 	return {
-		static_cast<CT<T, U>>(a.x) + static_cast<CT<T, U>>(b.x), 
-		static_cast<CT<T, U>>(a.y) + static_cast<CT<T, U>>(b.y)
+		a.x + b.x, 
+		a.y + b.y
 	} ; 
 }
 
-template <typename T, typename U> 
-constexpr auto operator-(const Point<T>& a, const Point<U>& b) noexcept -> Point<CT<T, U>> { 
+constexpr Point operator-(const Point& a, const Point& b) noexcept  { 
 	return {
-		static_cast<CT<T, U>>(a.x) - static_cast<CT<T, U>>(b.x), 
-		static_cast<CT<T, U>>(a.y) - static_cast<CT<T, U>>(b.y)
+		a.x - b.x, 
+		a.y - b.y
 	} ; 
 }
 
-template <typename T, typename U> 
-constexpr auto operator*(const Point<T>& a, const Point<U>& b) noexcept -> Point<CT<T, U>> { 
+constexpr Point operator*(const Point& a, const Point& b) noexcept  { 
 	return {
-		static_cast<CT<T, U>>(a.x) * static_cast<CT<T, U>>(b.x), 
-		static_cast<CT<T, U>>(a.y) * static_cast<CT<T, U>>(b.y)
+		a.x * b.x, 
+		a.y * b.y
 	} ; 
 }
 
-template <typename T, typename U> 
-constexpr auto operator/(const Point<T>& a, const Point<U>& b) noexcept -> Point<CT<T, U>> { 
+constexpr Point operator/(const Point& a, const Point& b) noexcept  { 
 	return {
-		static_cast<CT<T, U>>(a.x) / static_cast<CT<T, U>>(b.x), 
-		static_cast<CT<T, U>>(a.y) / static_cast<CT<T, U>>(b.y)
+		a.x / b.x, 
+		a.y / b.y
 	} ; 
 }
 
-template <typename T, typename U, typename = EI<std::is_arithmetic_v<U>>> 
-constexpr auto operator+(const Point<T>& a, U v) noexcept -> Point<CT<T, U>> { 
+constexpr Point operator+(const Point& a, sllong v) noexcept { 
 	return {
-		static_cast<CT<T, U>>(a.x) + static_cast<CT<T, U>>(v), 
-		static_cast<CT<T, U>>(a.y) + static_cast<CT<T, U>>(v)
+		a.x + v, 
+		a.y + v
 	} ; 
 }
 
-template <typename T, typename U, typename = EI<std::is_arithmetic_v<U>>> 
-constexpr auto operator-(const Point<T>& a, U v) noexcept -> Point<CT<T, U>> { 
+constexpr Point operator-(const Point& a, sllong v) noexcept { 
 	return {
-		static_cast<CT<T, U>>(a.x) - static_cast<CT<T, U>>(v), 
-		static_cast<CT<T, U>>(a.y) - static_cast<CT<T, U>>(v)
+		a.x - v, 
+		a.y - v
 	} ; 
 }
 
-template <typename T, typename U, typename = EI<std::is_arithmetic_v<U>>> 
-constexpr auto operator*(const Point<T>& a, U v) noexcept -> Point<CT<T, U>> { 
+constexpr Point operator*(const Point& a, sllong v) noexcept { 
 	return {
-		static_cast<CT<T, U>>(a.x) * static_cast<CT<T, U>>(v), 
-		static_cast<CT<T, U>>(a.y) * static_cast<CT<T, U>>(v)
+		a.x * v, 
+		a.y * v
 	} ; 
 }
 
-template <typename T, typename U, typename = EI<std::is_arithmetic_v<U>>> 
-constexpr auto operator/(const Point<T>& a, U v) noexcept -> Point<CT<T, U>> { 
+constexpr Point operator/(const Point& a, sllong v) noexcept { 
 	return {
-		static_cast<CT<T, U>>(a.x) / static_cast<CT<T, U>>(v), 
-		static_cast<CT<T, U>>(a.y) / static_cast<CT<T, U>>(v)
+		a.x / v, 
+		a.y / v
 	} ; 
 }
 
-template <typename T, typename U, typename = EI<std::is_arithmetic_v<U>>> 
-constexpr auto operator+(U v, const Point<T>& a) noexcept -> Point<CT<T, U>> { 
+constexpr Point operator+(sllong v, const Point& a) noexcept { 
 	return a + v ; 
 }
 
-template <typename T, typename U, typename = EI<std::is_arithmetic_v<U>>> 
-constexpr auto operator*(U v, const Point<T>& a) noexcept -> Point<CT<T, U>> { 
+constexpr Point operator*(sllong v, const Point& a) noexcept { 
 	return a * v ; 
 }
 
-template <typename T, typename U, typename = EI<std::is_arithmetic_v<U>>> 
-constexpr auto operator-(U v, const Point<T>& a) noexcept -> Point<CT<T, U>> { 
+constexpr Point operator-(sllong v, const Point& a) noexcept { 
 	return {
-		static_cast<CT<T, U>>(v) - static_cast<CT<T, U>>(a.x), 
-		static_cast<CT<T, U>>(v) - static_cast<CT<T, U>>(a.y)
+		v - a.x, 
+		v - a.y
 	} ; 
 }
 
-template <typename T, typename U, typename = EI<std::is_arithmetic_v<U>>> 
-constexpr auto operator/(U v, const Point<T>& a) noexcept -> Point<CT<T, U>> { 
+constexpr Point operator/(sllong v, const Point& a) noexcept { 
 	return {
-		static_cast<CT<T, U>>(v) / static_cast<CT<T, U>>(a.x), 
-		static_cast<CT<T, U>>(v) / static_cast<CT<T, U>>(a.y)
+		v / a.x, 
+		v / a.y
 	} ; 
 }
 
@@ -256,37 +223,34 @@ std::ostream& operator<<(std::ostream& os, const Point<T>& pt) const noexcept {
 
 #endif
 
-template <typename T, typename = EI<std::is_arithmetic_v<T>>> 
 struct Quad {
-	T x, y, w, h ;
+	sllong x, y ; 
+	uint w, h ;
 
 	constexpr Quad() noexcept : x(0), y(0), w(0), h(0) {}
 
-	template <typename U, typename = EI<std::is_arithmetic_v<U>>> 
-	constexpr Quad(U v) noexcept : x(v), y(v), w(v), h(v) {}
+	constexpr Quad(sllong v) noexcept : x(v), y(v), w(v), h(v) {}
 
-    template <typename U, typename = EI<std::is_arithmetic_v<U>>> 
-	constexpr Quad(U x, U y, U w, U h) noexcept : x(x), y(y), w(w), h(h) {}
+	constexpr Quad(sllong x, sllong y, uint w, uint h) noexcept : x(x), y(y), w(w), h(h) {}
 
-	template <typename U> 
-	constexpr Quad(const Point<U>& pos, const Point<U>& size) noexcept : x(pos.x), y(pos.y), w(size.x), h(size.y) {}
+	constexpr Quad(const Point& pos, const Point& size) noexcept : x(pos.x), y(pos.y), w(size.x), h(size.y) {}
 
-    template <typename U> 
-	constexpr Quad(const Quad<U>& o) noexcept : x(static_cast<T>(o.x)), y(static_cast<T>(o.y)), w(static_cast<T>(o.w)), h(static_cast<T>(o.h)) {}
+	constexpr Quad(const Quad& o) noexcept : x(o.x), y(o.y), w(o.w), h(o.h) {}
 
 	constexpr Quad(const tagRECT& o) noexcept : x(o.left), y(o.top), w(o.right - o.left), h(o.bottom - o.top) {}
 
 	constexpr Quad(const _RECTL& o) noexcept : x(o.left), y(o.top), w(o.right - o.left), h(o.bottom - o.top) {}
 
-	template <typename U, typename = EI<std::is_arithmetic_v<U>>> 
-	constexpr Quad& operator=(U v) noexcept { 
+	constexpr Quad& operator=(sllong v) noexcept { 
 		x = y = w = h = v ; 
 		return *this ; 
 	}
 
-	template <typename U> 
-	constexpr Quad& operator=(const Quad<U>& o) noexcept { 
-		x = o.x ; y = o.y ; w = o.w ; h = o.h ; 
+	constexpr Quad& operator=(const Quad& o) noexcept { 
+		x = o.x ; 
+		y = o.y ; 
+		w = o.w ; 
+		h = o.h ; 
 		return *this ; 
 	}
 
@@ -298,8 +262,7 @@ struct Quad {
 		return {-x, -y, w, h} ; 
 	}
 
-    template <typename U> 
-	constexpr Quad& operator+=(const Quad<U>& o) noexcept { 
+	constexpr Quad& operator+=(const Quad& o) noexcept { 
 		x += o.x ; 
 		y += o.y ; 
 		w += o.w ; 
@@ -307,8 +270,7 @@ struct Quad {
 		return *this ; 
 	}
 
-    template <typename U> 
-	constexpr Quad& operator-=(const Quad<U>& o) noexcept { 
+	constexpr Quad& operator-=(const Quad& o) noexcept { 
 		x -= o.x ; 
 		y -= o.y ; 
 		w -= o.w ; 
@@ -316,8 +278,7 @@ struct Quad {
 		return *this ; 
 	}
 
-    template <typename U> 
-	constexpr Quad& operator*=(const Quad<U>& o) noexcept { 
+	constexpr Quad& operator*=(const Quad& o) noexcept { 
 		x *= o.x ; 
 		y *= o.y ; 
 		w *= o.w ; 
@@ -325,8 +286,7 @@ struct Quad {
 		return *this ; 
 	}
 
-    template <typename U> 
-	constexpr Quad& operator/=(const Quad<U>& o) noexcept { 
+	constexpr Quad& operator/=(const Quad& o) noexcept { 
 		x /= o.x ; 
 		y /= o.y ; 
 		w /= o.w ; 
@@ -334,8 +294,7 @@ struct Quad {
 		return *this ; 
 	}
 
-    template <typename U, typename = EI<std::is_arithmetic_v<U>>> 
-	constexpr Quad& operator+=(U v) noexcept { 
+	constexpr Quad& operator+=(sllong v) noexcept { 
 		x += v ; 
 		y += v ; 
 		w += v ; 
@@ -343,8 +302,7 @@ struct Quad {
 		return *this ; 
 	}
 
-    template <typename U, typename = EI<std::is_arithmetic_v<U>>> 
-	constexpr Quad& operator-=(U v) noexcept { 
+	constexpr Quad& operator-=(sllong v) noexcept { 
 		x -= v ; 
 		y -= v ; 
 		w -= v ; 
@@ -352,8 +310,7 @@ struct Quad {
 		return *this ; 
 	}
 
-    template <typename U, typename = EI<std::is_arithmetic_v<U>>> 
-	constexpr Quad& operator*=(U v) noexcept { 
+	constexpr Quad& operator*=(sllong v) noexcept { 
 		x *= v ; 
 		y *= v ; 
 		w *= v ; 
@@ -361,8 +318,7 @@ struct Quad {
 		return *this ; 
 	}
 
-    template <typename U, typename = EI<std::is_arithmetic_v<U>>> 
-	constexpr Quad& operator/=(U v) noexcept { 
+	constexpr Quad& operator/=(sllong v) noexcept { 
 		x /= v ; 
 		y /= v ; 
 		w /= v ; 
@@ -378,7 +334,7 @@ struct Quad {
 		return !(*this == o) ; 
 	}
 
-	explicit operator tagRECT() const noexcept { 
+	operator tagRECT() const noexcept { 
 		return {
 			static_cast<slong>(x), 
 			static_cast<slong>(y), 
@@ -387,7 +343,7 @@ struct Quad {
 		} ; 
 	}
 
-	explicit operator _RECTL() const noexcept { 
+	operator _RECTL() const noexcept { 
 		return {
 			static_cast<slong>(x), 
 			static_cast<slong>(y), 
@@ -396,150 +352,142 @@ struct Quad {
 		} ; 
 	}
 
-	constexpr Point<T> getPos() const noexcept { 
+	constexpr std::pair<const sllong&, const sllong&> getPos() const noexcept { 
 		return {x, y} ; 
 	}
 
-	constexpr Point<T> getSize() const noexcept { 
+	constexpr std::pair<sllong&, sllong&> getPos() noexcept { 
+		return {x, y} ; 
+	}
+
+	constexpr std::pair<const uint&, const uint&> getSize() const noexcept { 
 		return {w, h} ; 
 	}
 
-	template <typename U, typename = EI<std::is_arithmetic_v<U>>> 
-	constexpr Quad& setPos(U x, U y) noexcept { 
+	constexpr std::pair<uint&, uint&> getSize() noexcept { 
+		return {w, h} ; 
+	}
+
+	constexpr Quad& setPos(sllong x, sllong y) noexcept { 
 		this->x = x ; 
 		this->y = y ; 
 		return *this ;
 	}
 
-	template <typename U> 
-	constexpr Quad& setPos(const Point<U>& pos) noexcept { 
+	constexpr Quad& setPos(const Point& pos) noexcept { 
 		x = pos.x ; 
 		y = pos.y ; 
 		return *this ;
 	}
 
-	template <typename U, typename = EI<std::is_arithmetic_v<U>>> 
-	constexpr Quad& setSize(U w, U h) noexcept { 
+	constexpr Quad& setSize(sllong w, sllong h) noexcept { 
 		this->w = w ; 
 		this->h = h ; 
 		return *this ;
 	}
 
-	template <typename U> 
-	constexpr Quad& setSize(const Point<U>& size) noexcept { 
-		w = size.w ; 
-		h = size.h ; 
+	constexpr Quad& setSize(const Point& size) noexcept { 
+		w = size.x ; 
+		h = size.y ; 
 		return *this ;
 	}
 } ;
 
-template <typename T, typename U> 
-constexpr auto operator+(const Quad<T>& a, const Quad<U>& b) noexcept -> Quad<CT<T, U>> { 
+constexpr Quad operator+(const Quad& a, const Quad& b) noexcept { 
 	return {
-		static_cast<CT<T, U>>(a.x) + static_cast<CT<T, U>>(b.x), 
-		static_cast<CT<T, U>>(a.y) + static_cast<CT<T, U>>(b.y), 
-		static_cast<CT<T, U>>(a.w) + static_cast<CT<T, U>>(b.w), 
-		static_cast<CT<T, U>>(a.h) + static_cast<CT<T, U>>(b.h)
+		a.x + b.x, 
+		a.y + b.y, 
+		a.w + b.w, 
+		a.h + b.h
 	} ; 
 }
 
-template <typename T, typename U> 
-constexpr auto operator-(const Quad<T>& a, const Quad<U>& b) noexcept -> Quad<CT<T, U>> { 
+constexpr Quad operator-(const Quad& a, const Quad& b) noexcept { 
 	return {
-		static_cast<CT<T, U>>(a.x) - static_cast<CT<T, U>>(b.x), 
-		static_cast<CT<T, U>>(a.y) - static_cast<CT<T, U>>(b.y), 
-		static_cast<CT<T, U>>(a.w) - static_cast<CT<T, U>>(b.w), 
-		static_cast<CT<T, U>>(a.h) - static_cast<CT<T, U>>(b.h)
+		a.x - b.x, 
+		a.y - b.y, 
+		a.w - b.w, 
+		a.h - b.h
 	} ; 
 }
 
-template <typename T, typename U> 
-constexpr auto operator*(const Quad<T>& a, const Quad<U>& b) noexcept -> Quad<CT<T, U>> { 
+constexpr Quad operator*(const Quad& a, const Quad& b) noexcept { 
 	return {
-		static_cast<CT<T, U>>(a.x) * static_cast<CT<T, U>>(b.x), 
-		static_cast<CT<T, U>>(a.y) * static_cast<CT<T, U>>(b.y), 
-		static_cast<CT<T, U>>(a.w) * static_cast<CT<T, U>>(b.w), 
-		static_cast<CT<T, U>>(a.h) * static_cast<CT<T, U>>(b.h)
+		a.x * b.x, 
+		a.y * b.y, 
+		a.w * b.w, 
+		a.h * b.h
 	} ; 
 }
 
-template <typename T, typename U> 
-constexpr auto operator/(const Quad<T>& a, const Quad<U>& b) noexcept -> Quad<CT<T, U>> { 
+constexpr Quad operator/(const Quad& a, const Quad& b) noexcept { 
 	return {
-		static_cast<CT<T, U>>(a.x) / static_cast<CT<T, U>>(b.x), 
-		static_cast<CT<T, U>>(a.y) / static_cast<CT<T, U>>(b.y), 
-		static_cast<CT<T, U>>(a.w) / static_cast<CT<T, U>>(b.w), 
-		static_cast<CT<T, U>>(a.h) / static_cast<CT<T, U>>(b.h)
+		a.x / b.x, 
+		a.y / b.y, 
+		a.w / b.w, 
+		a.h / b.h
 	} ; 
 }
 
-template <typename T, typename U, typename = EI<std::is_arithmetic_v<U>>> 
-constexpr auto operator+(const Quad<T>& a, U v) noexcept -> Quad<CT<T, U>> { 
+constexpr Quad operator+(const Quad& a, sllong v) noexcept { 
 	return {
-		static_cast<CT<T, U>>(a.x) + static_cast<CT<T, U>>(v), 
-		static_cast<CT<T, U>>(a.y) + static_cast<CT<T, U>>(v), 
-		static_cast<CT<T, U>>(a.w) + static_cast<CT<T, U>>(v), 
-		static_cast<CT<T, U>>(a.h) + static_cast<CT<T, U>>(v)
+		a.x + v, 
+		a.y + v, 
+		static_cast<uint>(a.w + v), 
+		static_cast<uint>(a.h + v)
 	} ; 
 }
 
-template <typename T, typename U, typename = EI<std::is_arithmetic_v<U>>> 
-constexpr auto operator-(const Quad<T>& a, U v) noexcept -> Quad<CT<T, U>> { 
+constexpr Quad operator-(const Quad& a, sllong v) noexcept { 
 	return {
-		static_cast<CT<T, U>>(a.x) - static_cast<CT<T, U>>(v), 
-		static_cast<CT<T, U>>(a.y) - static_cast<CT<T, U>>(v), 
-		static_cast<CT<T, U>>(a.w) - static_cast<CT<T, U>>(v), 
-		static_cast<CT<T, U>>(a.h) - static_cast<CT<T, U>>(v)
+		a.x - v, 
+		a.y - v, 
+		static_cast<uint>(a.w - v), 
+		static_cast<uint>(a.h - v)
 	} ; 
 }
 
-template <typename T, typename U, typename = EI<std::is_arithmetic_v<U>>> 
-constexpr auto operator*(const Quad<T>& a, U v) noexcept -> Quad<CT<T, U>> { 
+constexpr Quad operator*(const Quad& a, sllong v) noexcept { 
 	return {
-		static_cast<CT<T, U>>(a.x) * static_cast<CT<T, U>>(v), 
-		static_cast<CT<T, U>>(a.y) * static_cast<CT<T, U>>(v), 
-		static_cast<CT<T, U>>(a.w) * static_cast<CT<T, U>>(v), 
-		static_cast<CT<T, U>>(a.h) * static_cast<CT<T, U>>(v)
+		a.x * v, 
+		a.y * v, 
+		static_cast<uint>(a.w * v), 
+		static_cast<uint>(a.h * v)
 	} ; 
 }
 
-template <typename T, typename U, typename = EI<std::is_arithmetic_v<U>>> 
-constexpr auto operator/(const Quad<T>& a, U v) noexcept -> Quad<CT<T, U>> { 
+constexpr Quad operator/(const Quad& a, sllong v) noexcept { 
 	return {
-		static_cast<CT<T, U>>(a.x) / static_cast<CT<T, U>>(v), 
-		static_cast<CT<T, U>>(a.y) / static_cast<CT<T, U>>(v), 
-		static_cast<CT<T, U>>(a.w) / static_cast<CT<T, U>>(v), 
-		static_cast<CT<T, U>>(a.h) / static_cast<CT<T, U>>(v)
+		a.x / v, 
+		a.y / v, 
+		static_cast<uint>(a.w / v), 
+		static_cast<uint>(a.h / v)
 	} ; 
 }
 
-template <typename T, typename U, typename = EI<std::is_arithmetic_v<U>>> 
-constexpr auto operator+(U v, const Quad<T>& a) noexcept -> Quad<CT<T, U>> { 
+constexpr Quad operator+(sllong v, const Quad& a) noexcept { 
 	return a + v ; 
 }
 
-template <typename T, typename U, typename = EI<std::is_arithmetic_v<U>>> 
-constexpr auto operator-(U v, const Quad<T>& a) noexcept -> Quad<CT<T, U>> { 
+constexpr Quad operator-(sllong v, const Quad& a) noexcept { 
 	return {
-		static_cast<CT<T, U>>(v) - static_cast<CT<T, U>>(a.x), 
-		static_cast<CT<T, U>>(v) - static_cast<CT<T, U>>(a.y), 
-		static_cast<CT<T, U>>(v) - static_cast<CT<T, U>>(a.w), 
-		static_cast<CT<T, U>>(v) - static_cast<CT<T, U>>(a.h)
+		v - a.x, 
+		v - a.y, 
+		static_cast<uint>(v - a.w), 
+		static_cast<uint>(v - a.h)
 	} ; 
 }
 
-template <typename T, typename U, typename = EI<std::is_arithmetic_v<U>>> 
-constexpr auto operator*(U v, const Quad<T>& a) noexcept -> Quad<CT<T, U>> { 
+constexpr Quad operator*(sllong v, const Quad& a) noexcept { 
 	return a * v ; 
 }
 
-template <typename T, typename U, typename = EI<std::is_arithmetic_v<U>>> 
-constexpr auto operator/(U v, const Quad<T>& a) noexcept -> Quad<CT<T, U>> { 
+constexpr Quad operator/(sllong v, const Quad& a) noexcept { 
 	return {
-		static_cast<CT<T, U>>(v) / static_cast<CT<T, U>>(a.x), 
-		static_cast<CT<T, U>>(v) / static_cast<CT<T, U>>(a.y), 
-		static_cast<CT<T, U>>(v) / static_cast<CT<T, U>>(a.w), 
-		static_cast<CT<T, U>>(v) / static_cast<CT<T, U>>(a.h)
+		v / a.x, 
+		v / a.y, 
+		static_cast<uint>(v / a.w), 
+		static_cast<uint>(v / a.h)
 	} ; 
 }
 
@@ -648,7 +596,7 @@ public :
 	}
 
 	constexpr explicit operator COLORREF() const noexcept { 
-		return c.d ; 
+		return RGB(c.b[3], c.b[2], c.b[1]) ; 
 	} 
 
 	constexpr uchar& alpha() noexcept { 
@@ -766,9 +714,10 @@ std::ostream& operator<<(std::ostream& os, const Color& c) noexcept {
 
 #endif
 
-using Size = Point<uint> ;
-using Pos = Point<uint> ;
-using Rect = Quad<uint> ;
+using Size = Point ;
+using Pos = Point ;
+using Rect = Quad ;
 using RGBA = Color ;
+using Vertex = std::vector<POINT> ;
 
 #undef USE_ZUNIT_HELPER

@@ -2,21 +2,34 @@
 
 #define USE_Z_ALIAS
 
-#include "zunit.h"
+#include "zbitmap.h"
 
-constexpr void drawRect(HDC& hdc, const Rect& rect, const Color& fill, const Color& outline, uint thickness = 1) noexcept {
-	HBRUSH b0 = CreateSolidBrush(static_cast<COLORREF>(fill)) ;
-	HBRUSH b1 = static_cast<HBRUSH>(SelectObject(hdc, b0)) ;
+inline void drawRect(HDC hdc, const RECT& rect, const Color& fill, const Color& outline, uint thickness = 1) noexcept ;
 
-	HPEN p0 = CreatePen(PS_SOLID, thickness, static_cast<COLORREF>(outline)) ;
-	HPEN p1 = static_cast<HPEN>(SelectObject(hdc, p0)) ;
+inline void drawEllipse(HDC hdc, const RECT& rect, const Color& fill, const Color& outline, uint thickness = 1) noexcept ;
 
-	RECT r = static_cast<RECT>(rect) ;
-	Rectangle(hdc, r.left, r.top, r.right, r.bottom) ;
+inline void drawRect(HDC hdc, const RECT& rect, const Color& fill, const Color& outline, uint cw, uint ch, uint thickness = 1) noexcept ;
 
-	SelectObject(hdc, b1) ;
-	DeleteObject(b0) ;
+inline void drawPixel(HDC hdc, const Vertex& verts, const Color& fill, const Color& outline, uint thickness = 1) noexcept ;
 
-	SelectObject(hdc, p1) ;
-	DeleteObject(p0) ;
-}
+inline void drawArc(HDC hdc, const RECT& rect, const POINT& start, const POINT& end, const Color& outline, uint thickness = 1) noexcept ;
+
+inline void drawChord(HDC hdc, const RECT& rect, const POINT& start, const POINT& end, const Color& fill, const Color& outline, uint thickness = 1) noexcept ;
+
+inline void drawPie(HDC hdc, const RECT& rect, const POINT& start, const POINT& end, const Color& fill, const Color& outline, uint thickness = 1) noexcept ;
+
+inline void drawPolyline(HDC hdc, const Vertex& verts, const Color& outline, uint thickness = 1) noexcept ;
+
+inline void drawPolyBezier(HDC hdc, const Vertex& verts, const Color& outline, uint thickness = 1) noexcept ;
+
+inline void drawPolyBezierTo(HDC hdc, const Vertex& verts, const Color& outline, uint thickness = 1) noexcept ;
+
+inline void drawBitmap(HDC hdc, const Rect& rect, const Bitmap& bmp) noexcept ;
+
+inline void drawBitmapAlpha(HDC hdc, const Pos& pos, const Bitmap& bmp, BYTE alpha = 255) noexcept ;
+
+inline void drawBitmapTransparent(HDC hdc, const Pos& pos, const Bitmap& bmp, COLORREF transColor) noexcept ;
+
+#include "zdrawerimpl.h"
+
+#undef USE_Z_ALIAS

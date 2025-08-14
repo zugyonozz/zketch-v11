@@ -7,10 +7,36 @@
 #define USE_Z_ALIAS
 
 namespace error_handler {
-	struct register_class_failed { cstr what() const noexcept { return "Failed to register window class" ; } } ;
-	struct create_window_failed { cstr what() const noexcept { return "Failed to create window" ; } } ;
+
+	struct register_class_failed { 
+		cstr what() const noexcept { 
+			return "Failed to register window class" ; 
+		} 
+	} ;
+
+	struct create_window_failed { 
+		cstr what() const noexcept { 
+			return "Failed to create window" ; 
+		} 
+	} ;
+
 }
 
+template <typename T, auto MethodPtr, typename... Args>
+struct has_method_ {
+    template <typename U>
+    static auto test(int) -> decltype((std::declval<U>().*MethodPtr)(std::declval<Args>()...), std::true_type{});
+    
+    template <typename>
+    static auto test(...) -> std::false_type;
+
+    static constexpr bool value = decltype(test<T>(0))::value;
+};
+
+template <typename T, auto MethodPtr, typename... Args>
+constexpr bool has_method = has_method_<T, MethodPtr, Args...>::value;
+
+template <typename Derived>
 class Window {
 private :
 
@@ -21,28 +47,22 @@ private :
 
 	#endif
 
-// non-static member
+	// non-static member
 	HWND m_hwnd = nullptr ;
 	HINSTANCE m_hInstance = nullptr ;
 	Rect m_bound ;
 	cstr m_title ;
 	bool m_shouldclose = false ;
 	QE m_events ;
-	str WID = getWID() ;
+	str m_windowID = getWindowID() ;
 
-// static member
-	static inline schar nwindow = 0 ;
+	// static member
 	static inline HWNDM hwndmap ;
+	static inline uchar nwindow = 0 ;
+	static inline str window_id = "zwindow_" ;
 
-	#ifdef USEGLOBEV 
-
-	static inline QE GlobalEvents ; 
-	
-	#endif
-
-	static str getWID() noexcept {
-		static uchar baseWID = 0 ;
-		return std::to_string(baseWID++) ;
+	static inline str getWindowID() noexcept {
+		return (window_id += std::to_string(nwindow++)) ;
 	}
 
 	bool registerWindowClass() {
@@ -58,7 +78,7 @@ private :
         wc.hCursor = LoadCursor(nullptr, IDC_ARROW) ;
         wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1) ;
         wc.lpszMenuName = nullptr ;
-        wc.lpszClassName = WID.c_str() ;
+        wc.lpszClassName = m_windowID.c_str() ;
         wc.hIconSm = LoadIcon(nullptr, IDI_APPLICATION) ;
 
 		if (!RegisterClassEx(&wc)) {
@@ -73,7 +93,7 @@ private :
 	void createWindow() {
 		m_hwnd = CreateWindowEx(
             0, // Extended style
-            WID.c_str(), // Class name
+            m_windowID.c_str(), // Class name
             m_title, // Window title
             WS_OVERLAPPEDWINDOW, // Window style
             m_bound.x, // X position
@@ -117,7 +137,7 @@ private :
         }
 
         if (m_hInstance) 
-            UnregisterClass(WID.c_str(), m_hInstance) ;
+            UnregisterClass(m_windowID.c_str(), m_hInstance) ;
     }
 
 	LRESULT HandleMsg(HWND hwnd, uint msg, WPARAM wp, LPARAM lp) noexcept {
@@ -140,10 +160,6 @@ private :
 		printf("Event type %d pushed to window [%s]\n", (int)event.type, m_title) ;
 		
 		#endif
-		#endif
-
-		#ifdef USEGLOBEV 
-			GlobalEvents.push(event) ; 
 		#endif
 
 		}
@@ -242,10 +258,18 @@ private :
 
                 PAINTSTRUCT ps ;
                 HDC hdc = BeginPaint(hwnd, &ps) ;
-                RECT rect  ;
+                if constexpr (has_method<Derived, &Derived::OnPaint, HDC>) {
 
-                GetClientRect(hwnd, &rect) ;
-                FillRect(hdc, &rect, (HBRUSH)GetStockObject(BLACK_BRUSH)) ;
+					#ifdef ZWINDOW_DEBUG
+					#if defined(EVENT_RECEIVE) || defined (DEBUG_ALL)
+
+					printf("Derived Has Method OnPaint in WM_PAINT [%s]\n", m_title) ;
+
+					#endif
+					#endif
+
+					static_cast<Derived*>(this)->OnPaint(hdc) ;
+				}
                 EndPaint(hwnd, &ps) ;
 
                 return 0 ;
@@ -276,7 +300,7 @@ private :
 		return DefWindowProc(hwnd, msg, wp, lp) ;
 	}
 
-public :
+protected :
 	Window(const Window&) = delete ;
 	Window& operator=(const Window&) = delete ;
 
@@ -337,6 +361,12 @@ public :
 
 	~Window() noexcept { destroy() ; }
 
+	HWND getHandle() noexcept { 
+		return m_hwnd ; 
+	}
+
+public :
+
 	void show() noexcept { 
 		ShowWindow(m_hwnd, WinFg::SHOW) ; 
 		UpdateWindow(m_hwnd) ; 
@@ -370,11 +400,11 @@ public :
 		return m_bound.h ; 
 	}
 
-	Pos Size() const noexcept { 
+	std::pair<const uint&, const uint&> Size() const noexcept { 
 		return m_bound.getSize() ; 
 	}
 
-	Pos Position() const noexcept { 
+	std::pair<const sllong&, const sllong&> Position() const noexcept { 
 		return m_bound.getPos() ; 
 	}
 
@@ -432,7 +462,7 @@ public :
 		h = r.bottom - r.top ; 
 	}
 
-	::Size getClientSize() const noexcept { 
+	std::pair<const uint&, const uint&> getClientSize() const noexcept { 
 		return getClientBound().getSize() ; 
 	}
 
@@ -481,18 +511,6 @@ public :
         return false;
     }
 
-	#ifdef USE_GLOBAL_EVENT
-
-	static bool pollGlobalEvent(Event& e) {
-        if (!GlobalEvents.empty()) {
-            e = GlobalEvents.front();
-            GlobalEvents.pop();
-            return true;
-        }
-        return false;
-    }
-	#endif
-
 	static void processMessages() noexcept {
         MSG msg;
 
@@ -509,20 +527,20 @@ public :
         setPosition((screensize - wsize) / 2) ;
     }
 
-	bool containsPoint(Point<uint> pt) const noexcept {
+	bool containsPoint(const Point& pt) const noexcept {
         Rect b = getClientBound();
         return pt.x >= b.x && pt.x < b.x + b.w && pt.y >= b.y && pt.y < b.y + b.h ;
     }
 
-	Pos screenToClient(Pos pos) const noexcept {
+	Pos screenToClient(const Pos& pos) const noexcept {
         POINT pt = static_cast<POINT>(pos) ;
         ScreenToClient(m_hwnd, &pt) ;
 
         return Pos(pt.x, pt.y) ;
     }
 
-    Pos clientToScreen(Pos pos) const {
-        POINT pt = static_cast<POINT>(pos) ;
+    Pos clientToScreen(const Pos& pos) const {
+        POINT pt = pos ;
 
         ClientToScreen(m_hwnd, &pt) ;
         return Pos(pt.x, pt.y) ;
