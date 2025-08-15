@@ -1,25 +1,17 @@
-# Compiler
 CXX := g++
 CXXFLAGS := -Wall -Wextra -std=c++20 -Iincludes
 LDFLAGS := -lgdi32 -lgdiplus
 
-# Directories
 SRC_DIR := src
 IMPL_DIR := includes/impl
+OBJ_DIR := obj
 BIN_DIR := bin
 
-# Output binary
-TARGET := $(BIN_DIR)/temp.exe
+TARGET := $(BIN_DIR)/main.exe
 
-# Source files
-SRC_FILES := $(SRC_DIR)/temp.cpp \
-             $(IMPL_DIR)/zbitmap_impl.cpp \
-             $(IMPL_DIR)/zdrawer_impl.cpp \
-             $(IMPL_DIR)/zevent_impl.cpp \
-             $(IMPL_DIR)/zunit_impl.cpp
+SRC_FILES := $(wildcard $(SRC_DIR)/*.cpp) $(wildcard $(IMPL_DIR)/*.cpp)
 
-# Object files
-OBJ_FILES := $(SRC_FILES:.cpp=.o)
+OBJ_FILES := $(patsubst %.cpp,$(OBJ_DIR)/%.o,$(notdir $(SRC_FILES)))
 
 # Default target
 all: $(TARGET)
@@ -29,13 +21,18 @@ $(TARGET): $(OBJ_FILES)
 	@mkdir -p $(BIN_DIR)
 	$(CXX) $(OBJ_FILES) -o $@ $(LDFLAGS)
 
-# Compile
-%.o: %.cpp
+# Compile rule
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+	@mkdir -p $(OBJ_DIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJ_DIR)/%.o: $(IMPL_DIR)/%.cpp
+	@mkdir -p $(OBJ_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Clean build files
 clean:
-	rm -f $(OBJ_FILES) $(TARGET)
+	rm -rf $(OBJ_DIR) $(BIN_DIR)
 
 # Run program
 run: $(TARGET)

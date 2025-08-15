@@ -15,10 +15,44 @@ typedef Gdiplus::Color Color ;
 
 // forward declaration
 
-struct SZ ;
+struct PT ;
 struct PTF ;
+struct SZ ;
 struct SZF ;
+struct Quad ;
 struct QuadF ;
+
+// template spesialize for type checking
+
+template <typename> struct is_zunit_ {
+	static constexpr bool val = false ;
+} ;
+
+template <> struct is_zunit_<SZ> {
+	static constexpr bool val = true ;
+} ;
+
+template <> struct is_zunit_<SZF> {
+	static constexpr bool val = true ;
+} ;
+
+template <> struct is_zunit_<PT> {
+	static constexpr bool val = true ;
+} ;
+
+template <> struct is_zunit_<PTF> {
+	static constexpr bool val = true ;
+} ;
+
+template <> struct is_zunit_<Quad> {
+	static constexpr bool val = true ;
+} ;
+
+template <> struct is_zunit_<QuadF> {
+	static constexpr bool val = true ;
+} ;
+
+template <typename T> constexpr bool is_zunit = is_zunit_<T>::val ;
 
 // implementation zunit.h
 
@@ -34,7 +68,11 @@ struct PT : Gdiplus::Point {
 
 	PT(const PT& o) noexcept ;
 
+	PT(const PTF& o) noexcept ;
+
 	PT(const SZ& o) noexcept ;
+
+	PT(const SZF& o) noexcept ;
 
 	explicit PT(const tagPOINT& o) noexcept ;
 	
@@ -47,7 +85,15 @@ struct PT : Gdiplus::Point {
 	template <typename T, typename U, typename = std::enable_if_t<std::is_arithmetic_v<std::remove_cv_t<std::remove_reference_t<T>>> && std::is_arithmetic_v<std::remove_cv_t<std::remove_reference_t<U>>>>> 
 	constexpr PT(const std::pair<T&, U&>& pt) noexcept : Base(static_cast<int>(pt.first), static_cast<int>(pt.second)) {}
 	
-	constexpr PT& operator=(int v) noexcept;
+	constexpr PT& operator=(int v) noexcept ;
+
+	constexpr PT& operator=(const PT& o) noexcept ;
+
+	constexpr PT& operator=(const PTF& o) noexcept ;
+
+	constexpr PT& operator=(const SZ& o) noexcept ;
+
+	constexpr PT& operator=(const SZF& o) noexcept ;
 
 	template <typename T, typename U, typename = std::enable_if_t<std::is_arithmetic_v<std::remove_cv_t<std::remove_reference_t<T>>> && std::is_arithmetic_v<std::remove_cv_t<std::remove_reference_t<U>>>>> 
 	constexpr PT& operator=(const std::pair<T&, U&>& pt) noexcept {
@@ -80,19 +126,19 @@ struct PT : Gdiplus::Point {
 
     bool operator!=(const PT& o) const noexcept ;
 
-	operator tagPOINT() const noexcept ;
+	explicit operator tagPOINT() const noexcept ;
 
-	operator _POINTL() const noexcept ;
+	explicit operator _POINTL() const noexcept ;
 
-	operator tagSIZE() const noexcept ;
+	explicit operator tagSIZE() const noexcept ;
 
-	operator tagPOINTS() const noexcept ;
+	explicit operator tagPOINTS() const noexcept ;
 
-	explicit operator SZ() const noexcept ;
+	operator SZ() const noexcept ;
 
-	explicit operator PTF() const noexcept ;
+	operator PTF() const noexcept ;
 
-	explicit operator SZF() const noexcept ;
+	operator SZF() const noexcept ;
 
 } ;
 
@@ -136,6 +182,14 @@ struct SZ : Gdiplus::Size {
     
 	SZ(int x, int y) noexcept ;
 
+	SZ(const SZ& o) noexcept ;
+
+	SZ(const SZF& o) noexcept ;
+
+	SZ(const PT& o) noexcept ;
+
+	SZ(const PTF& o) noexcept ;
+
 	SZ(const tagPOINT& o) noexcept ;
 	
 	SZ(const POINTL& o) noexcept ;
@@ -148,6 +202,14 @@ struct SZ : Gdiplus::Size {
 	constexpr SZ(const std::pair<T&, U&>& sz) noexcept : Base(static_cast<int>(sz.first), static_cast<int>(sz.second)) {}
 	
 	constexpr SZ& operator=(int v) noexcept ;
+
+	constexpr SZ& operator=(const SZ& o) noexcept ;
+
+	constexpr SZ& operator=(const SZF& o) noexcept ;
+
+	constexpr SZ& operator=(const PT& o) noexcept ;
+
+	constexpr SZ& operator=(const PTF& o) noexcept ;
 
 	template <typename T, typename U, typename = std::enable_if_t<std::is_arithmetic_v<std::remove_cv_t<std::remove_reference_t<T>>> && std::is_arithmetic_v<std::remove_cv_t<std::remove_reference_t<U>>>>> 
 	constexpr SZ& operator=(const std::pair<T&, U&>& pt) noexcept {
@@ -180,19 +242,19 @@ struct SZ : Gdiplus::Size {
 
     bool operator!=(const SZ& o) const noexcept ;
 
-	operator tagPOINT() const noexcept ;
+	explicit operator tagPOINT() const noexcept ;
 
-	operator _POINTL() const noexcept ;
+	explicit operator _POINTL() const noexcept ;
 
-	operator tagSIZE() const noexcept ;
+	explicit operator tagSIZE() const noexcept ;
 
-	operator tagPOINTS() const noexcept ;
+	explicit operator tagPOINTS() const noexcept ;
 
-	explicit operator PT() const noexcept ;
+	operator PT() const noexcept ;
 
-	explicit operator PTF() const noexcept ;
+	operator PTF() const noexcept ;
 
-	explicit operator SZF() const noexcept ;
+	operator SZF() const noexcept ;
 
 } ;
 
@@ -236,6 +298,14 @@ struct PTF : Gdiplus::PointF {
     
 	PTF(float x, float y) noexcept ;
 
+	PTF(const PTF& o) noexcept ;
+
+	PTF(const PT& o) noexcept ;
+
+	PTF(const SZ& o) noexcept ;
+
+	PTF(const SZF& o) noexcept ;
+
 	PTF(const tagPOINT& o) noexcept ;
 	
 	PTF(const POINTL& o) noexcept ;
@@ -248,6 +318,15 @@ struct PTF : Gdiplus::PointF {
 	constexpr PTF(const std::pair<T&, U&>& pt) noexcept : Base(static_cast<float>(pt.first), static_cast<float>(pt.second)) {}
 	
 	constexpr PTF& operator=(float v) noexcept ;
+
+	constexpr PTF& operator=(const PTF& o) noexcept ;
+
+	constexpr PTF& operator=(const PT& o) noexcept ;
+
+	constexpr PTF& operator=(const SZ& o) noexcept ;
+
+	constexpr PTF& operator=(const SZF& o) noexcept ;
+	
 
 	template <typename T, typename U, typename = std::enable_if_t<std::is_arithmetic_v<std::remove_cv_t<std::remove_reference_t<T>>> && std::is_arithmetic_v<std::remove_cv_t<std::remove_reference_t<U>>>>> 
 	constexpr PTF& operator=(const std::pair<T&, U&>& pt) noexcept {
@@ -276,23 +355,23 @@ struct PTF : Gdiplus::PointF {
 
 	constexpr PTF& operator/=(float v) noexcept ;
 
-    constexpr bool operator==(const PTF& o) const noexcept ;
+    bool operator==(const PTF& o) const noexcept ;
 
-    constexpr bool operator!=(const PTF& o) const noexcept ;
+    bool operator!=(const PTF& o) const noexcept ;
 
-	operator tagPOINT() const noexcept ;
+	explicit operator tagPOINT() const noexcept ;
 
-	operator _POINTL() const noexcept ;
+	explicit operator _POINTL() const noexcept ;
 
-	operator tagSIZE() const noexcept ;
+	explicit operator tagSIZE() const noexcept ;
 
-	operator tagPOINTS() const noexcept ;
+	explicit operator tagPOINTS() const noexcept ;
 
-	explicit operator PT() const noexcept ;
+	operator PT() const noexcept ;
 
-	explicit operator SZ() const noexcept ;
+	operator SZ() const noexcept ;
 
-	explicit operator SZF() const noexcept ;
+	operator SZF() const noexcept ;
 
 } ;
 
@@ -336,6 +415,14 @@ struct SZF : Gdiplus::SizeF {
     
 	SZF(float x, float y) noexcept ;
 
+	SZF(const SZF& o) noexcept ;
+
+	SZF(const SZ& o) noexcept ;
+
+	SZF(const PT& o) noexcept ;
+
+	SZF(const PTF& o) noexcept ;
+
 	SZF(const tagPOINT& o) noexcept ;
 	
 	SZF(const POINTL& o) noexcept ;
@@ -348,6 +435,14 @@ struct SZF : Gdiplus::SizeF {
 	constexpr SZF(const std::pair<T&, U&>& sz) noexcept : Base(static_cast<float>(sz.first), static_cast<float>(sz.second)) {}
 	
 	constexpr SZF& operator=(int v) noexcept ;
+	
+	constexpr SZF& operator=(const SZF& o) noexcept ;
+
+	constexpr SZF& operator=(const SZ& o) noexcept ;
+
+	constexpr SZF& operator=(const PT& o) noexcept ;
+
+	constexpr SZF& operator=(const PTF& o) noexcept ;
 
 	template <typename T, typename U, typename = std::enable_if_t<std::is_arithmetic_v<std::remove_cv_t<std::remove_reference_t<T>>> && std::is_arithmetic_v<std::remove_cv_t<std::remove_reference_t<U>>>>> 
 	constexpr SZF& operator=(const std::pair<T&, U&>& pt) noexcept {
@@ -376,23 +471,23 @@ struct SZF : Gdiplus::SizeF {
 
 	constexpr SZF& operator/=(int v) noexcept ;
 
-    constexpr bool operator==(const SZF& o) const noexcept ;
+    bool operator==(const SZF& o) const noexcept ;
 
-    constexpr bool operator!=(const SZF& o) const noexcept ;
+    bool operator!=(const SZF& o) const noexcept ;
 
-	operator tagPOINT() const noexcept ;
+	explicit operator tagPOINT() const noexcept ;
 
-	operator _POINTL() const noexcept ;
+	explicit operator _POINTL() const noexcept ;
 
-	operator tagSIZE() const noexcept ;
+	explicit operator tagSIZE() const noexcept ;
 
-	operator tagPOINTS() const noexcept ;
+	explicit operator tagPOINTS() const noexcept ;
 
-	explicit operator PT() const noexcept ;
+	operator PT() const noexcept ;
 
-	explicit operator PTF() const noexcept ;
+	operator PTF() const noexcept ;
 
-	explicit operator SZ() const noexcept ;
+	operator SZ() const noexcept ;
 
 } ;
 
@@ -436,9 +531,12 @@ struct Quad : Gdiplus::Rect {
 
 	Quad(int x, int y, int w, int h) noexcept ;
 
-	Quad(const PT& pos, const SZ& size) noexcept ;
+	template <typename T, typename U, typename = std::enable_if_t<is_zunit<T> && is_zunit<U>>> 
+	Quad(const T& pos, const U& size) noexcept : Base(pos, size) {}
 
 	Quad(const Quad& o) noexcept ;
+
+	Quad(const QuadF& o) noexcept ;
 
 	Quad(const tagRECT& o) noexcept ;
 
@@ -447,6 +545,8 @@ struct Quad : Gdiplus::Rect {
 	Quad& operator=(int v) noexcept ;
 
 	Quad& operator=(const Quad& o) noexcept ;
+
+	Quad& operator=(const QuadF& o) noexcept ;
 
     Quad operator+() const noexcept ;
 
@@ -468,31 +568,35 @@ struct Quad : Gdiplus::Rect {
 
 	constexpr Quad& operator/=(int v) noexcept ;
 
-    constexpr bool operator==(const Quad& o) const noexcept ;
+    bool operator==(const Quad& o) const noexcept ;
 
-    constexpr bool operator!=(const Quad& o) const noexcept ;
+    bool operator!=(const Quad& o) const noexcept ;
 
 	explicit operator tagRECT() const noexcept ;
 
 	explicit operator _RECTL() const noexcept ;
 
-	explicit operator QuadF() const noexcept ;
+	operator QuadF() const noexcept ;
 
-	std::pair<const int&, const int&> getPos() const noexcept ;
+	PT getPos() const noexcept ;
 
-	std::pair<int&, int&> getPos() noexcept ;
+	PT getPos() noexcept ;
 
-	std::pair<const int&, const int&> getSize() const noexcept ;
+	SZ getSize() const noexcept ;
 
-	std::pair<int&, int&> getSize() noexcept ;
+	SZ getSize() noexcept ;
 
 	Quad& setPos(int x, int y) noexcept ;
 
 	Quad& setPos(const PT& pos) noexcept ;
 
+	Quad& setPos(const PTF& pos) noexcept ;
+
 	Quad& setSize(int w, int h) noexcept ;
 
 	Quad& setSize(const SZ& size) noexcept ;
+
+	Quad& setSize(const SZF& size) noexcept ;
 } ;
 
 Quad operator+(const Quad& a, const Quad& b) noexcept ;
@@ -539,6 +643,8 @@ struct QuadF : Gdiplus::RectF {
 
 	QuadF(const QuadF& o) noexcept ;
 
+	QuadF(const Quad& o) noexcept ;
+
 	QuadF(const tagRECT& o) noexcept ;
 
 	QuadF(const _RECTL& o) noexcept ;
@@ -546,6 +652,8 @@ struct QuadF : Gdiplus::RectF {
 	QuadF& operator=(float v) noexcept ;
 
 	QuadF& operator=(const QuadF& o) noexcept ;
+
+	QuadF& operator=(const Quad& o) noexcept ;
 
     QuadF operator+() const noexcept ;
 
@@ -567,9 +675,9 @@ struct QuadF : Gdiplus::RectF {
 
 	constexpr QuadF& operator/=(float v) noexcept ;
 
-    constexpr bool operator==(const QuadF& o) const noexcept ;
+    bool operator==(const QuadF& o) const noexcept ;
 
-    constexpr bool operator!=(const QuadF& o) const noexcept ;
+    bool operator!=(const QuadF& o) const noexcept ;
 
 	explicit operator tagRECT() const noexcept ;
 
@@ -577,21 +685,25 @@ struct QuadF : Gdiplus::RectF {
 
 	explicit operator Quad() const noexcept ;
 
-	std::pair<const float&, const float&> getPos() const noexcept ;
+	PTF getPos() const noexcept ;
 
-	constexpr std::pair<float&, float&> getPos() noexcept ;
+	PTF getPos() noexcept ;
 
-	constexpr std::pair<const float&, const float&> getSize() const noexcept ;
+	SZF getSize() const noexcept ;
 
-	constexpr std::pair<float&, float&> getSize() noexcept ;
+	SZF getSize() noexcept ;
 
 	constexpr QuadF& setPos(float x, float y) noexcept ;
 
 	constexpr QuadF& setPos(const PT& pos) noexcept ;
 
+	constexpr QuadF& setPos(const PTF& pos) noexcept ;
+
 	constexpr QuadF& setSize(float w, float h) noexcept ;
 
 	constexpr QuadF& setSize(const SZ& size) noexcept ;
+
+	constexpr QuadF& setSize(const SZF& size) noexcept ;
 } ;
 
 QuadF operator+(const QuadF& a, const QuadF& b) noexcept ;

@@ -8,7 +8,11 @@ PT::PT(int x, int y) noexcept : Base(x, y) {}
 
 PT::PT(const PT& o) noexcept : Base(o) {}
 
+PT::PT(const PTF& o) noexcept : Base(static_cast<PT>(o)) {}
+
 PT::PT(const SZ& o) noexcept : Base(o) {}
+
+PT::PT(const SZF& o) noexcept : Base(static_cast<PT>(o)) {}
 
 PT::PT(const tagPOINT& o) noexcept : Base(static_cast<int>(o.x), static_cast<int>(o.y)) {}
 
@@ -21,6 +25,30 @@ PT::PT(const tagPOINTS& o) noexcept : Base(static_cast<short>(o.x), static_cast<
 constexpr PT& PT::operator=(int v) noexcept { 
 	X = Y = v ;
 	return *this ; 
+}
+
+constexpr PT& PT::operator=(const PT& o) noexcept {
+	X = o.X ;
+	Y = o.Y ;
+	return *this ;
+}
+
+constexpr PT& PT::operator=(const PTF& o) noexcept {
+	X = static_cast<float>(o.X) ;
+	Y = static_cast<float>(o.Y) ;
+	return *this ;
+}
+
+constexpr PT& PT::operator=(const SZ& o) noexcept {
+	X = o.Width ;
+	Y = o.Height ;
+	return *this ;
+}
+
+constexpr PT& PT::operator=(const SZF& o) noexcept {
+	X = static_cast<float>(o.Width) ;
+	Y = static_cast<float>(o.Height) ;
+	return *this ;
 }
 
 PT PT::operator+() const noexcept { 
@@ -228,6 +256,14 @@ SZ::SZ(int v) noexcept : Base(v, v) {}
 
 SZ::SZ(int x, int y) noexcept : Base(x, y) {}
 
+SZ::SZ(const SZ& o) noexcept : Base(o) {}
+
+SZ::SZ(const SZF& o) noexcept : Base(static_cast<SZ>(o)) {}
+
+SZ::SZ(const PT& o) noexcept : Base(o) {}
+
+SZ::SZ(const PTF& o) noexcept : Base(static_cast<SZ>(o)) {}
+
 SZ::SZ(const tagPOINT& o) noexcept : Base(static_cast<int>(o.x), static_cast<int>(o.y)) {}
 
 SZ::SZ(const POINTL& o) noexcept : Base(static_cast<int>(o.x), static_cast<int>(o.y)) {}
@@ -239,6 +275,30 @@ SZ::SZ(const tagPOINTS& o) noexcept : Base(static_cast<short>(o.x), static_cast<
 constexpr SZ& SZ::operator=(int v) noexcept { 
 	Width = Height = v ;
 	return *this ; 
+}
+
+constexpr SZ& SZ::operator=(const SZ& o) noexcept {
+	Width = o.Width ;
+	Height = o.Height ;
+	return *this ;
+}
+
+constexpr SZ& SZ::operator=(const SZF& o) noexcept {
+	Width = static_cast<int>(o.Width) ;
+	Height = static_cast<int>(o.Height) ;
+	return *this ;
+}
+
+constexpr SZ& SZ::operator=(const PT& o) noexcept {
+	Width = o.X ;
+	Height = o.Y ;
+	return *this ;
+}
+
+constexpr SZ& SZ::operator=(const PTF& o) noexcept {
+	Width = static_cast<int>(o.X) ;
+	Height = static_cast<int>(o.Y) ;
+	return *this ;
 }
 
 SZ SZ::operator+() const noexcept { 
@@ -446,6 +506,14 @@ PTF::PTF(float v) noexcept : Base(v, v) {}
 
 PTF::PTF(float x, float y) noexcept : Base(x, y) {}
 
+PTF::PTF(const PTF& o) noexcept : Base(o) {}
+
+PTF::PTF(const PT& o) noexcept : Base(static_cast<PTF>(o)) {}
+
+PTF::PTF(const SZ& o) noexcept : Base(static_cast<PTF>(o)) {}
+
+PTF::PTF(const SZF& o) noexcept : Base(o) {}
+
 PTF::PTF(const tagPOINT& o) noexcept : Base(static_cast<float>(o.x), static_cast<float>(o.y)) {}
 
 PTF::PTF(const POINTL& o) noexcept : Base(static_cast<float>(o.x), static_cast<float>(o.y)) {}
@@ -457,6 +525,30 @@ PTF::PTF(const tagPOINTS& o) noexcept : Base(static_cast<float>(o.x), static_cas
 constexpr PTF& PTF::operator=(float v) noexcept { 
 	X = Y = v ;
 	return *this ; 
+}
+
+constexpr PTF& PTF::operator=(const PTF& o) noexcept {
+	X = o.X ;
+	Y = o.Y ;
+	return *this ;
+}
+
+constexpr PTF& PTF::operator=(const PT& o) noexcept {
+	X = static_cast<int>(o.X) ;
+	Y = static_cast<int>(o.Y) ;
+	return *this ;
+}
+
+constexpr PTF& PTF::operator=(const SZ& o) noexcept {
+	X = static_cast<int>(o.Width) ;
+	Y = static_cast<int>(o.Height) ;
+	return *this ;
+}
+
+constexpr PTF& PTF::operator=(const SZF& o) noexcept {
+	X = o.Width ;
+	Y = o.Height ;
+	return *this ;
 }
 
 PTF PTF::operator+() const noexcept { 
@@ -515,11 +607,11 @@ constexpr PTF& PTF::operator/=(float v) noexcept {
 	return *this ; 
 }
 
-constexpr bool PTF::operator==(const PTF& o) const noexcept { 
+bool PTF::operator==(const PTF& o) const noexcept { 
 	return Equals(o) ; 
 }
 
-constexpr bool PTF::operator!=(const PTF& o) const noexcept { 
+bool PTF::operator!=(const PTF& o) const noexcept { 
 	return !Equals(o) ; 
 }
 
@@ -664,6 +756,14 @@ SZF::SZF(float v) noexcept : Base(v, v) {}
 
 SZF::SZF(float x, float y) noexcept : Base(x, y) {}
 
+SZF::SZF(const SZF& o) noexcept : Base(o) {}
+
+SZF::SZF(const SZ& o) noexcept : Base(o) {}
+
+SZF::SZF(const PT& o) noexcept : Base(o) {}
+
+SZF::SZF(const PTF& o) noexcept : Base(o) {}
+
 SZF::SZF(const tagPOINT& o) noexcept : Base(static_cast<float>(o.x), static_cast<float>(o.y)) {}
 
 SZF::SZF(const POINTL& o) noexcept : Base(static_cast<float>(o.x), static_cast<float>(o.y)) {}
@@ -675,6 +775,27 @@ SZF::SZF(const tagPOINTS& o) noexcept : Base(static_cast<short>(o.x), static_cas
 constexpr SZF& SZF::operator=(int v) noexcept { 
 	Width = Height = v ;
 	return *this ; 
+}
+
+constexpr SZF& SZF::operator=(const SZF& o) noexcept {
+	Width = o.Width ;
+	Height = o.Height ;
+	return *this ;
+}
+constexpr SZF& SZF::operator=(const SZ& o) noexcept {
+	Width = static_cast<int>(o.Width) ;
+	Height = static_cast<int>(o.Height) ;
+	return *this ;
+}
+constexpr SZF& SZF::operator=(const PT& o) noexcept {
+	Width = static_cast<int>(o.X) ;
+	Height = static_cast<int>(o.Y) ;
+	return *this ;
+}
+constexpr SZF& SZF::operator=(const PTF& o) noexcept {
+	Width = o.X ;
+	Height = o.Y ;
+	return *this ;
 }
 
 SZF SZF::operator+() const noexcept { 
@@ -733,11 +854,11 @@ constexpr SZF& SZF::operator/=(int v) noexcept {
 	return *this ; 
 }
 
-constexpr bool SZF::operator==(const SZF& o) const noexcept { 
+bool SZF::operator==(const SZF& o) const noexcept { 
 	return Equals(o) ; 
 }
 
-constexpr bool SZF::operator!=(const SZF& o) const noexcept { 
+bool SZF::operator!=(const SZF& o) const noexcept { 
 	return !Equals(o) ; 
 }
 
@@ -882,9 +1003,9 @@ Quad::Quad(int v) noexcept : Base(v, v, v, v) {}
 
 Quad::Quad(int x, int y, int w, int h) noexcept : Base(x, y, w, h) {}
 
-Quad::Quad(const PT& pos, const SZ& size) noexcept : Base(pos, size) {}
-
 Quad::Quad(const Quad& o) noexcept : Base(o) {}
+
+Quad::Quad(const QuadF& o) noexcept : Base(static_cast<Quad>(o)) {}
 
 Quad::Quad(const tagRECT& o) noexcept : Base(o.left, o.top, o.right - o.left, o.bottom - o.top) {}
 
@@ -900,6 +1021,14 @@ Quad& Quad::operator=(const Quad& o) noexcept {
 	Y = o.Y ; 
 	Width = o.Width ; 
 	Height = o.Height ; 
+	return *this ; 
+}
+
+Quad& Quad::operator=(const QuadF& o) noexcept { 
+	X = static_cast<int>(o.X) ; 
+	Y = static_cast<int>(o.Y) ; 
+	Width = static_cast<int>(o.Width) ; 
+	Height = static_cast<int>(o.Height) ; 
 	return *this ; 
 }
 
@@ -975,11 +1104,11 @@ constexpr Quad& Quad::operator/=(int v) noexcept {
 	return *this ; 
 }
 
-constexpr bool Quad::operator==(const Quad& o) const noexcept { 
+bool Quad::operator==(const Quad& o) const noexcept { 
 	return Equals(o) ; 
 }
 
-constexpr bool Quad::operator!=(const Quad& o) const noexcept { 
+bool Quad::operator!=(const Quad& o) const noexcept { 
 	return !Equals(o) ; 
 }
 
@@ -1010,19 +1139,19 @@ Quad::operator QuadF() const noexcept {
 	} ;
 }
 
-std::pair<const int&, const int&> Quad::getPos() const noexcept { 
+PT Quad::getPos() const noexcept { 
 	return {X, Y} ; 
 }
 
-std::pair<int&, int&> Quad::getPos() noexcept { 
+PT Quad::getPos() noexcept { 
 	return {X, Y} ; 
 }
 
-std::pair<const int&, const int&> Quad::getSize() const noexcept { 
+SZ Quad::getSize() const noexcept { 
 	return {Width, Height} ; 
 }
 
-std::pair<int&, int&> Quad::getSize() noexcept { 
+SZ Quad::getSize() noexcept { 
 	return {Width, Height} ; 
 }
 
@@ -1034,7 +1163,13 @@ Quad& Quad::setPos(int x, int y) noexcept {
 
 Quad& Quad::setPos(const PT& pos) noexcept { 
 	X = pos.X ; 
-	Y = pos.X ; 
+	Y = pos.Y ; 
+	return *this ;
+}
+
+Quad& Quad::setPos(const PTF& pos) noexcept { 
+	X = static_cast<int>(pos.X) ; 
+	Y = static_cast<int>(pos.Y) ; 
 	return *this ;
 }
 
@@ -1047,6 +1182,12 @@ Quad& Quad::setSize(int w, int h) noexcept {
 Quad& Quad::setSize(const SZ& size) noexcept { 
 	Width = size.Width ; 
 	Height = size.Height ; 
+	return *this ;
+}
+
+Quad& Quad::setSize(const SZF& size) noexcept { 
+	Width = static_cast<int>(size.Width) ; 
+	Height = static_cast<int>(size.Height) ; 
 	return *this ;
 }
 
@@ -1167,6 +1308,8 @@ QuadF::QuadF(const PTF& pos, const SZF& size) noexcept : Base(pos, size) {}
 
 QuadF::QuadF(const QuadF& o) noexcept : Base(o) {}
 
+QuadF::QuadF(const Quad& o) noexcept : Base(o) {}
+
 QuadF::QuadF(const tagRECT& o) noexcept : Base(o.left, o.top, o.right - o.left, o.bottom - o.top) {}
 
 QuadF::QuadF(const _RECTL& o) noexcept : Base(o.left, o.top, o.right - o.left, o.bottom - o.top) {}
@@ -1181,6 +1324,14 @@ QuadF& QuadF::operator=(const QuadF& o) noexcept {
 	Y = o.Y ; 
 	Width = o.Width ; 
 	Height = o.Height ; 
+	return *this ; 
+}
+
+QuadF& QuadF::operator=(const Quad& o) noexcept { 
+	X = static_cast<float>(o.X) ; 
+	Y = static_cast<float>(o.Y) ; 
+	Width = static_cast<float>(o.Width) ; 
+	Height = static_cast<float>(o.Height) ; 
 	return *this ; 
 }
 
@@ -1256,11 +1407,11 @@ constexpr QuadF& QuadF::operator/=(float v) noexcept {
 	return *this ; 
 }
 
-constexpr bool QuadF::operator==(const QuadF& o) const noexcept { 
+bool QuadF::operator==(const QuadF& o) const noexcept { 
 	return Equals(o) ; 
 }
 
-constexpr bool QuadF::operator!=(const QuadF& o) const noexcept { 
+bool QuadF::operator!=(const QuadF& o) const noexcept { 
 	return !Equals(o) ; 
 }
 
@@ -1291,19 +1442,19 @@ QuadF::operator Quad() const noexcept {
 	} ; 
 }
 
-std::pair<const float&, const float&> QuadF::getPos() const noexcept { 
+PTF QuadF::getPos() const noexcept { 
 	return {X, Y} ; 
 }
 
-constexpr std::pair<float&, float&> QuadF::getPos() noexcept { 
+PTF QuadF::getPos() noexcept { 
 	return {X, Y} ; 
 }
 
-constexpr std::pair<const float&, const float&> QuadF::getSize() const noexcept { 
+SZF QuadF::getSize() const noexcept { 
 	return {Width, Height} ; 
 }
 
-constexpr std::pair<float&, float&> QuadF::getSize() noexcept { 
+SZF QuadF::getSize() noexcept { 
 	return {Width, Height} ; 
 }
 
@@ -1314,8 +1465,14 @@ constexpr QuadF& QuadF::setPos(float x, float y) noexcept {
 }
 
 constexpr QuadF& QuadF::setPos(const PT& pos) noexcept { 
+	X = static_cast<int>(pos.X) ; 
+	Y = static_cast<int>(pos.Y) ; 
+	return *this ;
+}
+
+constexpr QuadF& QuadF::setPos(const PTF& pos) noexcept { 
 	X = pos.X ; 
-	Y = pos.X ; 
+	Y = pos.Y ; 
 	return *this ;
 }
 
@@ -1326,6 +1483,12 @@ constexpr QuadF& QuadF::setSize(float w, float h) noexcept {
 }
 
 constexpr QuadF& QuadF::setSize(const SZ& size) noexcept { 
+	Width = static_cast<int>(size.Width) ; 
+	Height = static_cast<int>(size.Height) ; 
+	return *this ;
+}
+
+constexpr QuadF& QuadF::setSize(const SZF& size) noexcept { 
 	Width = size.Width ; 
 	Height = size.Height ; 
 	return *this ;

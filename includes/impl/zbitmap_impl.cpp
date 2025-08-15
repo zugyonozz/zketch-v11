@@ -3,7 +3,7 @@
 Bitmap::Bitmap(HBITMAP bmp) noexcept : hbmp(bmp) {
 	BITMAP bm ;
 	if (GetObject(bmp, sizeof(bm), &bm))
-		bound = {0, 0, bm.bmWidth, bm.bmHeight} ;
+		bound = Quad{0, 0, bm.bmWidth, bm.bmHeight} ;
 }
 
 Bitmap::Bitmap(Bitmap&& o) noexcept : hbmp(o.hbmp), bound(o.bound) {

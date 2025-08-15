@@ -400,11 +400,11 @@ public :
 		return m_bound.Height ; 
 	}
 
-	std::pair<const int&, const int&> Size() const noexcept { 
+	SZ Size() const noexcept { 
 		return m_bound.getSize() ; 
 	}
 
-	std::pair<const int&, const int&> Position() const noexcept { 
+	PT Position() const noexcept { 
 		return m_bound.getPos() ; 
 	}
 
@@ -522,7 +522,7 @@ public :
 	
 	void centerOnScreen() noexcept {
         PT screensize = {GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)} ;
-        PT wsize = getClientSize() ;
+		PT wsize = getClientSize() ;
 
         setPosition((screensize - wsize) / 2) ;
     }
@@ -540,7 +540,7 @@ public :
     }
 
     PT clientToScreen(const PT& pos) const {
-        POINT pt = pos ;
+        POINT pt = static_cast<POINT>(pos) ;
 
         ClientToScreen(m_hwnd, &pt) ;
         return PT(pt.x, pt.y) ;
