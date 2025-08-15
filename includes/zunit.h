@@ -1,13 +1,13 @@
 #pragma once
 
 #undef __OBJC__
+
 #define WIN32_LEAN_AND_MEAN
 
 #include <ostream>
 #include <vector>
 #include "zdef.h"
-#include <objidl.h>
-#include <gdiplus.h>
+#include "zgdiplusinit.h"
 
 typedef Gdiplus::Color Color ;
 

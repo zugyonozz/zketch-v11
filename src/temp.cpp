@@ -11,7 +11,7 @@ public :
 	win(cstr title, const SZ& size) noexcept : Window(title, size) {}
 
 	void OnPaint(HDC hdc) const noexcept {
-		drawRect(hdc, {0, 0, 200, 200}, Color(255, 0, 255, 255), Color(255, 0, 0, 0), 2) ;
+		drawRect(hdc, {0, 0, 200, 200}, Color(255, 0, 255, 255), Color(255, 0, 0, 0)) ;
 	}
 	void OnClose() const noexcept {}
 } ;
@@ -33,4 +33,5 @@ int main() {
 		}
 		t.delay(16) ;
 	}
+	return 0 ;
 }
