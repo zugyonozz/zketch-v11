@@ -24,7 +24,7 @@ using str		= std::string ;
 #endif
 
 struct WinFg {
-	enum : uint {
+	enum : uchar {
 		HIDE = SW_HIDE,
 		NORMAL = SW_NORMAL,
 		SHOWMINIMIZE = SW_SHOWMINIMIZED,
