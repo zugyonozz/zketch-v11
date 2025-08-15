@@ -50,7 +50,7 @@ private :
 	// non-static member
 	HWND m_hwnd = nullptr ;
 	HINSTANCE m_hInstance = nullptr ;
-	Rect m_bound ;
+	Quad m_bound ;
 	cstr m_title ;
 	bool m_shouldclose = false ;
 	QE m_events ;
@@ -96,10 +96,10 @@ private :
             m_windowID.c_str(), // Class name
             m_title, // Window title
             WS_OVERLAPPEDWINDOW, // Window style
-            m_bound.x, // X position
-            m_bound.y, // Y position
-            m_bound.w, // Width
-            m_bound.h, // Height
+            m_bound.X, // X position
+            m_bound.Y, // Y position
+            m_bound.Width, // Width
+            m_bound.Height, // Height
             nullptr, // Parent window
             nullptr, // Menu
             m_hInstance, // Instance handle
@@ -310,13 +310,13 @@ protected :
         SetWindowLongPtr(m_hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this)) ;
 	}
 
-	Window(cstr title, const Size& size) noexcept : m_bound(Pos{}, size), m_title(title), m_hInstance(GetModuleHandle(nullptr)) {
+	Window(cstr title, const SZ& size) noexcept : m_bound(PT{}, size), m_title(title), m_hInstance(GetModuleHandle(nullptr)) {
 		registerWindowClass() ;
         createWindow() ;
         SetWindowLongPtr(m_hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this)) ;
 	}
 
-	Window(cstr title, const Size& size, const Pos& pos) noexcept : m_bound(pos, size), m_title(title), m_hInstance(GetModuleHandle(nullptr)) {
+	Window(cstr title, const PT& pos, const SZ& size) noexcept : m_bound(pos, size), m_title(title), m_hInstance(GetModuleHandle(nullptr)) {
 		registerWindowClass() ;
         createWindow() ;
         SetWindowLongPtr(m_hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this)) ;
@@ -328,7 +328,7 @@ protected :
         SetWindowLongPtr(m_hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this)) ;
 	}
 
-	Window(cstr title, const Rect& bound) noexcept : m_bound(bound), m_title(title), m_hInstance(GetModuleHandle(nullptr)) {
+	Window(cstr title, const Quad& bound) noexcept : m_bound(bound), m_title(title), m_hInstance(GetModuleHandle(nullptr)) {
 		registerWindowClass() ;
         createWindow() ;
         SetWindowLongPtr(m_hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this)) ;
@@ -393,22 +393,22 @@ public :
 	}
 
 	uint width() const noexcept { 
-		return m_bound.w ; 
+		return m_bound.Width ; 
 	}
 
 	uint height() const noexcept { 
-		return m_bound.h ; 
+		return m_bound.Height ; 
 	}
 
-	std::pair<const uint&, const uint&> Size() const noexcept { 
+	std::pair<const int&, const int&> Size() const noexcept { 
 		return m_bound.getSize() ; 
 	}
 
-	std::pair<const sllong&, const sllong&> Position() const noexcept { 
+	std::pair<const int&, const int&> Position() const noexcept { 
 		return m_bound.getPos() ; 
 	}
 
-	const Rect& Bound() const noexcept { 
+	const Quad& Bound() const noexcept { 
 		return m_bound ; 
 	} ;
 
@@ -423,24 +423,24 @@ public :
 
     template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>> 
 	void setSize(T w, T h) noexcept { 
-		SetWindowPos(m_hwnd, nullptr, 0, 0, (m_bound.w = w) , (m_bound.h = h), SWP_NOMOVE | SWP_NOZORDER) ; 
+		SetWindowPos(m_hwnd, nullptr, 0, 0, (m_bound.Width = w) , (m_bound.Height = h), SWP_NOMOVE | SWP_NOZORDER) ; 
 	}
 
     template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>> 
 	void setPosition(T x, T y) noexcept { 
-		SetWindowPos(m_hwnd, nullptr, (m_bound.x = x), (m_bound.y = y), 0 , 0, SWP_NOSIZE | SWP_NOZORDER) ; 
+		SetWindowPos(m_hwnd, nullptr, (m_bound.X = x), (m_bound.X = y), 0 , 0, SWP_NOSIZE | SWP_NOZORDER) ; 
 	}
 
-	void setSize(const ::Size& size) noexcept { 
-		SetWindowPos(m_hwnd, nullptr, 0, 0, (m_bound.w = size.x) , (m_bound.h = size.y), SWP_NOMOVE | SWP_NOZORDER) ; 
+	void setSize(const SZ& size) noexcept { 
+		SetWindowPos(m_hwnd, nullptr, 0, 0, (m_bound.Width = size.Width) , (m_bound.Height = size.Height), SWP_NOMOVE | SWP_NOZORDER) ; 
 	}
 
-    void setPosition(const Pos& pos) noexcept { 
-		SetWindowPos(m_hwnd, nullptr, (m_bound.x = pos.x), (m_bound.y = pos.y), 0 , 0, SWP_NOSIZE | SWP_NOZORDER) ; 
+    void setPosition(const PT& pos) noexcept { 
+		SetWindowPos(m_hwnd, nullptr, (m_bound.X = pos.X), (m_bound.Y = pos.Y), 0 , 0, SWP_NOSIZE | SWP_NOZORDER) ; 
 	}
 
-	void setBound(const Rect& bound) noexcept { 
-		SetWindowPos(m_hwnd, nullptr, (m_bound.x = bound.x), (m_bound.y = bound.y), (m_bound.w = bound.w) , (m_bound.h = bound.h), SWP_NOZORDER) ; 
+	void setBound(const Quad& bound) noexcept { 
+		SetWindowPos(m_hwnd, nullptr, (m_bound.X = bound.X), (m_bound.Y = bound.Y), (m_bound.Width = bound.Width) , (m_bound.Height = bound.Height), SWP_NOZORDER) ; 
 	}
 
 	bool shouldClose() const noexcept { 
@@ -455,21 +455,21 @@ public :
 		return m_hwnd && IsWindow(m_hwnd) ; 
 	}
 
-	void getClientSize(uint& w, uint& h) const noexcept { 
+	void getClientSize(int& w, int& h) const noexcept { 
 		RECT r ; 
 		GetClientRect(m_hwnd, &r) ; 
 		w = r.right - r.left ; 
 		h = r.bottom - r.top ; 
 	}
 
-	std::pair<const uint&, const uint&> getClientSize() const noexcept { 
+	SZ getClientSize() const noexcept { 
 		return getClientBound().getSize() ; 
 	}
 
-	Rect getClientBound() const noexcept { 
+	Quad getClientBound() const noexcept { 
 		RECT r1 ; 
 		GetClientRect(m_hwnd, &r1) ; 
-		return Rect{Pos{}, ::Size{r1.right - r1.left, r1.bottom - r1.top}} ; 
+		return Quad{PT{}, SZ{r1.right - r1.left, r1.bottom - r1.top}} ; 
 	}
 
 	bool hasEvents() const { 
@@ -521,29 +521,29 @@ public :
     }
 	
 	void centerOnScreen() noexcept {
-        ::Size screensize = {GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)} ;
-        ::Size wsize = getClientSize() ;
+        PT screensize = {GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)} ;
+        PT wsize = getClientSize() ;
 
         setPosition((screensize - wsize) / 2) ;
     }
 
-	bool containsPoint(const Point& pt) const noexcept {
-        Rect b = getClientBound();
-        return pt.x >= b.x && pt.x < b.x + b.w && pt.y >= b.y && pt.y < b.y + b.h ;
+	bool containsPoint(const PT& pt) const noexcept {
+        Quad b = getClientBound();
+        return pt.X >= b.X && pt.X < b.X + b.Width && pt.Y >= b.Y && pt.Y < b.Y + b.Height ;
     }
 
-	Pos screenToClient(const Pos& pos) const noexcept {
+	PT screenToClient(const PT& pos) const noexcept {
         POINT pt = static_cast<POINT>(pos) ;
         ScreenToClient(m_hwnd, &pt) ;
 
-        return Pos(pt.x, pt.y) ;
+        return PT(pt.x, pt.y) ;
     }
 
-    Pos clientToScreen(const Pos& pos) const {
+    PT clientToScreen(const PT& pos) const {
         POINT pt = pos ;
 
         ClientToScreen(m_hwnd, &pt) ;
-        return Pos(pt.x, pt.y) ;
+        return PT(pt.x, pt.y) ;
     }
 
 	#ifdef ZWINDOW_DEBUG

@@ -1,7 +1,8 @@
 #pragma once
 
-#include <windows.h>
+#define WIN32_LEAN_AND_MEAN
 #include <string>
+#include <windows.h>
 
 #define USE_Z_ALIAS
 

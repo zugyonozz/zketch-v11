@@ -7,7 +7,7 @@
 class Bitmap {
 private :
 	HBITMAP hbmp = nullptr ;
-	Rect bound = {} ;
+	Quad bound = {} ;
 
 public :
 	Bitmap(const Bitmap&) = delete ;
@@ -27,21 +27,19 @@ public :
 
 	operator HBITMAP() const noexcept ;
 
-	const Rect& getRect() const noexcept ;
+	const Quad& getRect() const noexcept ;
 
-	Rect& getRect() noexcept ;
+	Quad& getRect() noexcept ;
 
-	const uint& getHeight() const noexcept ;
+	int getHeight() const noexcept ;
 
-	uint& getHeight() noexcept ;
+	int getHeight() noexcept ;
 
-	const uint& getWidth() const noexcept ;
+	int getWidth() const noexcept ;
 
-	uint& getWidth() noexcept ;
+	int getWidth() noexcept ;
 } ;
 
-inline HBITMAP LoadBMP(cstr path) noexcept ;
-
-#include "zbitmapimpl.h"
+HBITMAP LoadBMP(cstr path) noexcept ;
 
 #undef USE_Z_ALIAS

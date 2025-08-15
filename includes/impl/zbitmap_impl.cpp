@@ -1,9 +1,9 @@
-#pragma once
+#include "../zbitmap.h"
 
 Bitmap::Bitmap(HBITMAP bmp) noexcept : hbmp(bmp) {
 	BITMAP bm ;
 	if (GetObject(bmp, sizeof(bm), &bm))
-		bound = {0LL, 0LL, static_cast<uint>(bm.bmWidth), static_cast<uint>(bm.bmHeight)} ;
+		bound = {0, 0, bm.bmWidth, bm.bmHeight} ;
 }
 
 Bitmap::Bitmap(Bitmap&& o) noexcept : hbmp(o.hbmp), bound(o.bound) {
@@ -35,30 +35,30 @@ Bitmap::operator HBITMAP() const noexcept {
 	return hbmp ;
 }
 
-const Rect& Bitmap::getRect() const noexcept {
+const Quad& Bitmap::getRect() const noexcept {
 	return bound ;
 }
 
-Rect& Bitmap::getRect() noexcept {
+Quad& Bitmap::getRect() noexcept {
 	return bound ;
 }
 
-const uint& Bitmap::getHeight() const noexcept {
-	return bound.h ;
+int Bitmap::getHeight() const noexcept {
+	return bound.Height ;
 }
 
-uint& Bitmap::getHeight() noexcept {
-	return bound.h ;
+int Bitmap::getHeight() noexcept {
+	return bound.Height ;
 }
 
-const uint& Bitmap::getWidth() const noexcept {
-	return bound.w ;
+int Bitmap::getWidth() const noexcept {
+	return bound.Width ;
 }
 
-uint& Bitmap::getWidth() noexcept {
-	return bound.w ;
+int Bitmap::getWidth() noexcept {
+	return bound.Width ;
 }
 
-inline HBITMAP LoadBMP(cstr path) noexcept {
+HBITMAP LoadBMP(cstr path) noexcept {
 	return static_cast<HBITMAP>(LoadImage(nullptr, path, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION)) ;
 }

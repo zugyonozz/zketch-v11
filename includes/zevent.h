@@ -34,12 +34,12 @@ struct Event {
 		} key ;
 
         struct { 
-            Pos pos ; 
+            int x, y ; 
             MouseButton button ;
         } mouse ;
 
         struct { 
-            Size size_ ;
+            int w, h ;
         } resize ;
     } ;
 
@@ -47,13 +47,13 @@ struct Event {
 
 	bool isFromWindow(HWND src) const noexcept ;
 
-    Pos getMousePosition() const noexcept ;
+    PT getMousePosition() const noexcept ;
 
-    void setMousePosition(Pos pos) noexcept ;
+    void setMousePosition(PT pos) noexcept ;
 
-    Size getResizeSize() const noexcept ;
+    SZ getResizeSize() const noexcept ;
 
-    void setResizeSize(Pos newSize) noexcept ;
+    void setResizeSize(SZ newSize) noexcept ;
 
     bool isMouseEvent() const noexcept ;
 
@@ -64,18 +64,16 @@ struct Event {
     bool isKey(int keyCode) const noexcept ;
 } ;
 
-inline Event translateWinEvent(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) noexcept ;
+Event translateWinEvent(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) noexcept ;
 
-inline Pos getEventPosition(const Event& event) noexcept ;
+PT getEventPosition(const Event& event) noexcept ;
 
-inline Size getEventSize(const Event& event) noexcept ;
+SZ getEventSize(const Event& event) noexcept ;
 
-inline Event createMouseEvent(EventType type, Pos position, MouseButton button) noexcept ;
+Event createMouseEvent(EventType type, PT position, MouseButton button) noexcept ;
 
-inline Event createResizeEvent(Pos size) noexcept ;
+Event createResizeEvent(SZ size) noexcept ;
 
-inline Event createKeyEvent(EventType type, int keyCode) noexcept ;
-
-#include "zeventimpl.h"
+Event createKeyEvent(EventType type, int keyCode) noexcept ;
 
 #undef USE_Z_ALIAS
