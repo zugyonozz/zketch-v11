@@ -1,9 +1,8 @@
 #pragma once
 
-#include <queue>
-#include <unordered_map>
 #include <string>
-#include <deque> 
+#include <unordered_map>
+#include <queue>
 
 #define WIN32_LEAN_AND_MEAN
 #ifndef NOMINMAX
@@ -11,8 +10,23 @@
 #endif
 #include <windows.h>
 
-#include <zunit.h>
+#include "zunit.h"
 #include "zevent.h"
+
+#ifndef USE_Z_ALIAS
+#define USE_Z_ALIAS
+#endif
+
+#ifndef USE_ZREGISTRY_HELPER
+#define USE_ZREGISTRY_HELPER
+#endif
+
+#ifdef USE_Z_ALIAS
+
+template <typename Key, typename Data>
+using umap = std::unordered_map<Key, Data> ;
+
+#endif
 
 namespace error_handler {
 
@@ -30,10 +44,44 @@ namespace error_handler {
 
 }
 
+#ifdef USE_ZREGISTRY_HELPER
+
+struct inc {
+	int operator()(int n = 1) const noexcept {
+		static int internal_inc_v = 0 ;
+		return (internal_inc_v += n) ;
+	}
+} ;
+
+struct dec {
+	int operator()(int n = 1) const noexcept {
+		static int internal_dec_v = ~0U & static_cast<unsigned>(1 << 31) ;
+		return (internal_dec_v -= n) ;
+	}
+} ;
+
+template <typename Fn = inc>
+std::string make_id(const char* prefix, Fn&& fn = Fn{}) noexcept {
+    auto num = std::to_string(std::forward<Fn>(fn)());
+    return std::string(prefix) + num;
+}
+
+#endif
+
+template <typename> 
+class Window ;
+
+template <typename Window>
+class Registry {
+protected :
+	static inline umap<HWND, Window*> windows ;
+	static inline uchar nwindow = 0 ;
+} ;
+
 template <typename Derived> 
-class Window {
+class Window : public Registry<Window<Derived>> {
 private :
-	using HWNDM = std::unordered_map<HWND, Window*> ;
+	using HWNDM = std::unordered_map<HWND, std::pair<Window*, cstr>> ;
 
 	// non-static member
 	HWND m_hwnd = nullptr ;
@@ -42,16 +90,11 @@ private :
 	cstr m_title ;
 	bool m_shouldclose = false ;
 	std::queue<Event, std::deque<Event>> m_events ;
-	std::string m_windowID = getWindowID() ;
+	std::string m_windowID = make_id("Window") ;
 
 	// static member
 	static inline HWNDM hwndmap ;
 	static inline uchar nwindow = 0 ;
-	static inline std::string window_id = "zwindow_" ;
-
-	static inline std::string getWindowID() noexcept {
-		return (window_id += std::to_string(nwindow++)) ;
-	}
 
 	bool registerWindowClass() {
 		WNDCLASSEX wc = {} ;
@@ -543,3 +586,11 @@ public :
 	#endif
 
 } ;
+
+#ifdef USE_ZREGISTRY_HELPER
+#undef USE_ZREGISTRY_HELPER
+#endif
+
+#ifdef USE_Z_ALIAS
+#undef USE_Z_ALIAS
+#endif
