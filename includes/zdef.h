@@ -2,7 +2,7 @@
 
 #define WIN32_LEAN_AND_MEAN
 
-#ifdef NOMINMAX
+#ifndef NOMINMAX
 #define NOMINMAX
 #endif
 

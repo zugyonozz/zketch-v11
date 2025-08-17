@@ -3,594 +3,445 @@
 #include <string>
 #include <unordered_map>
 #include <queue>
+#include <memory>
+#include <atomic>
+#include <utility>
 
 #define WIN32_LEAN_AND_MEAN
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
+
 #include <windows.h>
 
 #include "zunit.h"
 #include "zevent.h"
 
-#ifndef USE_Z_ALIAS
-#define USE_Z_ALIAS
-#endif
+// Forward declarations
+template<typename Derived>
+class Window;
 
-#ifndef USE_ZREGISTRY_HELPER
-#define USE_ZREGISTRY_HELPER
-#endif
+// Type aliases for better readability
+using cstr = const char*;
+template<typename Key, typename Value>
+using fast_map = std::unordered_map<Key, Value>;
 
-#ifdef USE_Z_ALIAS
-
-template <typename Key, typename Data>
-using umap = std::unordered_map<Key, Data> ;
-
-#endif
-
+// Error handling namespace
 namespace error_handler {
-
-	struct register_class_failed { 
-		cstr what() const noexcept { 
-			return "Failed to register window class" ; 
-		} 
-	} ;
-
-	struct create_window_failed { 
-		cstr what() const noexcept { 
-			return "Failed to create window" ; 
-		} 
-	} ;
-
-}
-
-#ifdef USE_ZREGISTRY_HELPER
-
-struct inc {
-	int operator()(int n = 1) const noexcept {
-		static int internal_inc_v = 0 ;
-		return (internal_inc_v += n) ;
-	}
-} ;
-
-struct dec {
-	int operator()(int n = 1) const noexcept {
-		static int internal_dec_v = ~0U & static_cast<unsigned>(1 << 31) ;
-		return (internal_dec_v -= n) ;
-	}
-} ;
-
-template <typename Fn = inc>
-std::string make_id(const char* prefix, Fn&& fn = Fn{}) noexcept {
-    auto num = std::to_string(std::forward<Fn>(fn)());
-    return std::string(prefix) + num;
-}
-
-#endif
-
-template <typename> 
-class Window ;
-
-template <typename Window>
-class Registry {
-protected :
-	static inline umap<HWND, Window*> windows ;
-	static inline uchar nwindow = 0 ;
-} ;
-
-template <typename Derived> 
-class Window : public Registry<Window<Derived>> {
-private :
-	using HWNDM = std::unordered_map<HWND, std::pair<Window*, cstr>> ;
-
-	// non-static member
-	HWND m_hwnd = nullptr ;
-	HINSTANCE m_hInstance = nullptr ;
-	Quad m_bound ;
-	cstr m_title ;
-	bool m_shouldclose = false ;
-	std::queue<Event, std::deque<Event>> m_events ;
-	std::string m_windowID = make_id("Window") ;
-
-	// static member
-	static inline HWNDM hwndmap ;
-	static inline uchar nwindow = 0 ;
-
-	bool registerWindowClass() {
-		WNDCLASSEX wc = {} ;
-
-		wc.cbSize = sizeof(WNDCLASSEX) ;
-		wc.style = CS_HREDRAW | CS_VREDRAW ;
-		wc.lpfnWndProc = initEventHandler ;
-		wc.cbClsExtra = 0 ;
-        wc.cbWndExtra = 0 ;
-        wc.hInstance = m_hInstance ;
-        wc.hIcon = LoadIcon(nullptr, IDI_APPLICATION) ;
-        wc.hCursor = LoadCursor(nullptr, IDC_ARROW) ;
-        wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1) ;
-        wc.lpszMenuName = nullptr ;
-        wc.lpszClassName = m_windowID.c_str() ;
-        wc.hIconSm = LoadIcon(nullptr, IDI_APPLICATION) ;
-
-		if (!RegisterClassEx(&wc)) {
-            if (GetLastError() != ERROR_CLASS_ALREADY_EXISTS) {
-                throw error_handler::register_class_failed() ;
-			} else
-			 	return false ;
-		}
-		return true;
-	}
-
-	void createWindow() {
-		m_hwnd = CreateWindowEx(
-            0, // Extended style
-            m_windowID.c_str(), // Class name
-            m_title, // Window title
-            WS_OVERLAPPEDWINDOW, // Window style
-            m_bound.X, // X position
-            m_bound.Y, // Y position
-            m_bound.Width, // Width
-            m_bound.Height, // Height
-            nullptr, // Parent window
-            nullptr, // Menu
-            m_hInstance, // Instance handle
-            this // Additional data
-        ) ;
-
-		if (!m_hwnd)
-			throw error_handler::create_window_failed() ;
-
-		hwndmap[m_hwnd] = this ;
-		nwindow++ ;
-
-		#ifdef ZWINDOW_DEBUG
-		#if defined(EVENT_RECEIVE) || defined (DEBUG_ALL)
-
-		printf("Window [%s] created. Total count: %d\n", m_title, nwindow) ;
-
-		#endif
-		#endif
-	}
-
-	void destroy() noexcept {
-
-		#ifdef ZWINDOW_DEBUG
-		#if defined(EVENT_RECEIVE) || defined (DEBUG_ALL)
-
-		printf("Destroying window [%s]\n", m_title) ;
-		
-		#endif
-		#endif
-
-        if (m_hwnd) {
-            DestroyWindow(m_hwnd) ;
-            m_hwnd = nullptr ;
+    struct register_class_failed {
+        constexpr cstr what() const noexcept {
+            return "Failed to register window class";
         }
+    };
 
-        if (m_hInstance) 
-            UnregisterClass(m_windowID.c_str(), m_hInstance) ;
+    struct create_window_failed {
+        constexpr cstr what() const noexcept {
+            return "Failed to create window";
+        }
+    };
+}
+
+// Utility for generating unique IDs
+class IdGenerator {
+private:
+    static inline std::atomic<int> counter_{0};
+    
+public:
+    static std::string generate(cstr prefix) noexcept {
+        return std::string(prefix) + std::to_string(counter_.fetch_add(1, std::memory_order_relaxed));
+    }
+};
+
+// Window registry for managing HWND to Window mappings
+template<typename Derived>
+class WindowRegistry {
+public:
+    using WindowPtr = Window<Derived>*;
+    
+private:
+    static inline fast_map<HWND, WindowPtr> windows_;
+    static inline std::atomic<uint8_t> window_count_{0};
+    
+public:
+    static void register_window(HWND hwnd, WindowPtr window) noexcept {
+        windows_[hwnd] = window;
+        window_count_.fetch_add(1, std::memory_order_relaxed);
+    }
+    
+    static void unregister_window(HWND hwnd) noexcept {
+        if (windows_.erase(hwnd) > 0) {
+            window_count_.fetch_sub(1, std::memory_order_relaxed);
+        }
+    }
+    
+    static WindowPtr find_window(HWND hwnd) noexcept {
+        auto it = windows_.find(hwnd);
+        return (it != windows_.end()) ? it->second : nullptr;
+    }
+    
+    static uint8_t get_count() noexcept {
+        return window_count_.load(std::memory_order_relaxed);
+    }
+    
+    static bool empty() noexcept {
+        return window_count_.load(std::memory_order_relaxed) == 0;
+    }
+};
+
+// Main Window class
+template<typename Derived>
+class Window {
+private:
+    // Core window data
+    HWND hwnd_ = nullptr;
+    HINSTANCE instance_ = nullptr;
+    Quad bounds_;
+    std::string title_;
+    std::string class_id_;
+    
+    // State management
+    std::atomic<bool> should_close_{false};
+    
+    // Event system - using deque for better performance
+    std::queue<Event, std::deque<Event>> events_;
+    
+    // Static registry
+    static inline fast_map<HWND, Window*> hwnd_map_;
+    static inline std::atomic<uint8_t> window_count_{0};
+
+    // Window class registration
+    bool register_window_class() noexcept {
+        WNDCLASSEX wc{};
+        wc.cbSize = sizeof(WNDCLASSEX);
+        wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC; // Added CS_OWNDC for better performance
+        wc.lpfnWndProc = window_procedure;
+        wc.hInstance = instance_;
+        wc.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
+        wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+        wc.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
+        wc.lpszClassName = class_id_.c_str();
+        wc.hIconSm = LoadIcon(nullptr, IDI_APPLICATION);
+
+        if (!RegisterClassExA(&wc)) {
+            return GetLastError() == ERROR_CLASS_ALREADY_EXISTS;
+        }
+        return true;
     }
 
-	LRESULT HandleMsg(HWND hwnd, unsigned long long msg, WPARAM wp, LPARAM lp) noexcept {
+    // Window creation
+    void create_window() {
+        hwnd_ = CreateWindowExA(
+            0,
+            class_id_.c_str(),
+            title_.c_str(),
+            WS_OVERLAPPEDWINDOW,
+            bounds_.X, bounds_.Y,
+            bounds_.Width, bounds_.Height,
+            nullptr, nullptr,
+            instance_,
+            this
+        );
 
-		#ifdef ZWINDOW_DEBUG
-		#if defined(EVENT_RECEIVE) || defined (DEBUG_ALL)
-		
-		printf("Window [%s] received message: 0x%X\n", m_title, msg) ;
-		
-		#endif
-		#endif
+        if (!hwnd_) {
+            throw error_handler::create_window_failed();
+        }
 
-		Event event = translateWinEvent(hwnd, msg, wp, lp) ;
-        if (event.type != EventType::None) {
-            m_events.push(event) ;
+        hwnd_map_[hwnd_] = this;
+        window_count_.fetch_add(1, std::memory_order_relaxed);
+    }
 
-		#ifdef ZWINDOW_DEBUG
-		#if defined(EVENT_RECEIVE) || defined (DEBUG_ALL)
+    // Cleanup
+    void destroy() noexcept {
+        if (hwnd_) {
+            DestroyWindow(hwnd_);
+            hwnd_ = nullptr;
+        }
+        
+        if (instance_) {
+            UnregisterClassA(class_id_.c_str(), instance_);
+        }
+    }
 
-		printf("Event type %d pushed to window [%s]\n", (int)event.type, m_title) ;
-		
-		#endif
-		#endif
-
-		}
-
+    // Message handling - optimized for performance
+    LRESULT handle_message(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) noexcept {
+        // Fast path for common messages
         switch (msg) {
-            case WM_CLOSE :
+            case WM_PAINT: {
+                PAINTSTRUCT ps;
+                HDC hdc = BeginPaint(hwnd, &ps);
+                
+                // Use SFINAE to check if OnPaint exists
+                if constexpr (requires(HDC hdc) { static_cast<Derived*>(this)->OnPaint(hdc); }) {
+                    static_cast<Derived*>(this)->OnPaint(hdc);
+                }
+                
+                EndPaint(hwnd, &ps);
+                return 0;
+            }
+            
+            case WM_CLOSE:
+                destroy();
+                should_close_.store(true, std::memory_order_relaxed);
+                return 0;
+                
+            case WM_DESTROY: {
+                auto it = hwnd_map_.find(hwnd);
+                if (it != hwnd_map_.end()) {
+                    hwnd_map_.erase(it);
+                }
+                
+                if (window_count_.fetch_sub(1, std::memory_order_relaxed) <= 1) {
+                    PostQuitMessage(0);
+                }
+                return 0;
+            }
+            
+            case WM_SIZE:
+                bounds_.setSize(LOWORD(lp), HIWORD(lp));
+                break;
+                
+            case WM_MOVE:
+                bounds_.setPos(LOWORD(lp), HIWORD(lp));
+                break;
+                
+            default:
+                break;
+        }
 
-				#ifdef ZWINDOW_DEBUG
-				#if defined(EVENT_RECEIVE) || defined (DEBUG_ALL)
+        // Convert and queue event
+        Event event = translateWinEvent(hwnd, msg, wp, lp);
+        if (event.type != EventType::None) {
+            events_.emplace(std::move(event));
+        }
 
-				printf("WM_CLOSE received by window [%s]\n", m_title) ;
+        return DefWindowProcA(hwnd, msg, wp, lp);
+    }
 
-				#endif
-				#endif
+    // Static window procedure
+    static LRESULT CALLBACK window_procedure(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) noexcept {
+        Window* window = nullptr;
 
-				destroy() ;
-                m_shouldclose = true ;
-                return 0 ;
+        if (msg == WM_NCCREATE) {
+            auto cs = reinterpret_cast<CREATESTRUCTA*>(lp);
+            window = static_cast<Window*>(cs->lpCreateParams);
+            SetWindowLongPtrA(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(window));
+            hwnd_map_[hwnd] = window;
+        } else {
+            window = reinterpret_cast<Window*>(GetWindowLongPtrA(hwnd, GWLP_USERDATA));
+        }
 
-            case WM_DESTROY : {
+        return window ? window->handle_message(hwnd, msg, wp, lp) 
+                     : DefWindowProcA(hwnd, msg, wp, lp);
+    }
 
-				#ifdef ZWINDOW_DEBUG
-				#if defined(EVENT_RECEIVE) || defined (DEBUG_ALL)
+protected:
+    // Protected constructors for CRTP
+    explicit Window(cstr title, const SZ& size, const PT& pos = {0, 0}) noexcept
+        : bounds_(pos, size)
+        , title_(title)
+        , class_id_(IdGenerator::generate("Window"))
+        , instance_(GetModuleHandleA(nullptr)) {
+        
+        if (register_window_class()) {
+            create_window();
+            SetWindowLongPtrA(hwnd_, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+        }
+    }
 
-				printf("WM_DESTROY received by window [%s]\n", m_title) ;
+    explicit Window(cstr title, const Quad& bounds) noexcept
+        : bounds_(bounds)
+        , title_(title)
+        , class_id_(IdGenerator::generate("Window"))
+        , instance_(GetModuleHandleA(nullptr)) {
+        
+        if (register_window_class()) {
+            create_window();
+            SetWindowLongPtrA(hwnd_, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+        }
+    }
 
-				#endif
-				#endif
+    // Move semantics
+    Window(Window&& other) noexcept
+        : hwnd_(std::exchange(other.hwnd_, nullptr))
+        , instance_(std::exchange(other.instance_, nullptr))
+        , bounds_(other.bounds_)
+        , title_(std::move(other.title_))
+        , class_id_(std::move(other.class_id_))
+        , should_close_(other.should_close_.load())
+        , events_(std::move(other.events_)) {
+        
+        if (hwnd_) {
+            SetWindowLongPtrA(hwnd_, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+            hwnd_map_[hwnd_] = this;
+        }
+    }
 
-                auto it = hwndmap.find(hwnd) ;
-				if (it != hwndmap.end()) 
-                    hwndmap.erase(it) ;
-
-				if (nwindow > 0) 
-					nwindow-- ;
-
-				#ifdef ZWINDOW_DEBUG
-				#if defined(EVENT_RECEIVE) || defined (DEBUG_ALL)
-
-				printf("Remaining window count: %d\n", (int)nwindow) ;
-
-				#endif
-				#endif
-
-                if (nwindow <= 0) {
-
-					#ifdef ZWINDOW_DEBUG
-					#if defined(EVENT_RECEIVE) || defined (DEBUG_ALL)
-
-					printf("Last window destroyed, calling PostQuitMessage\n") ;
-
-					#endif
-					#endif
-
-                    PostQuitMessage(0) ;
-				}
-
-                return 0 ;
-			}
-			
-            case WM_SIZE :
-
-				#ifdef ZWINDOW_DEBUG
-				#if defined(EVENT_RECEIVE) || defined (DEBUG_ALL)
-
-				printf("WM_SIZE received by window [%s]\n", m_title) ;
-
-				#endif
-				#endif
-				
-                m_bound.setSize(LOWORD(lp), HIWORD(lp)) ;
-                break ;
-
-            case WM_MOVE :
-
-				#ifdef ZWINDOW_DEBUG
-				#if defined(EVENT_RECEIVE) || defined (DEBUG_ALL)
-
-				printf("WM_MOVE received by window [%s]\n", m_title) ;
-
-				#endif
-				#endif
-
-                m_bound.setPos(LOWORD(lp), HIWORD(lp)) ;
-                break ;
-
-            case WM_PAINT : {
-
-				#ifdef ZWINDOW_DEBUG
-				#if defined(EVENT_RECEIVE) || defined (DEBUG_ALL)
-
-				printf("WM_PAINT received by window [%s]\n", m_title) ;
-
-				#endif
-				#endif
-
-                PAINTSTRUCT ps ;
-                HDC hdc = BeginPaint(hwnd, &ps) ;
-                if constexpr (requires (HDC hdc) { std::declval<Derived>().OnPaint(hdc) ; }) {
-
-					#ifdef ZWINDOW_DEBUG
-					#if defined(EVENT_RECEIVE) || defined (DEBUG_ALL)
-
-					printf("Derived Has Method OnPaint in WM_PAINT [%s]\n", m_title) ;
-
-					#endif
-					#endif
-
-					static_cast<Derived*>(this)->OnPaint(hdc) ;
-				}
-                EndPaint(hwnd, &ps) ;
-
-                return 0 ;
+    Window& operator=(Window&& other) noexcept {
+        if (this != &other) {
+            destroy();
+            
+            hwnd_ = std::exchange(other.hwnd_, nullptr);
+            instance_ = std::exchange(other.instance_, nullptr);
+            bounds_ = other.bounds_;
+            title_ = std::move(other.title_);
+            class_id_ = std::move(other.class_id_);
+            should_close_.store(other.should_close_.load());
+            events_ = std::move(other.events_);
+            
+            if (hwnd_) {
+                SetWindowLongPtrA(hwnd_, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+                hwnd_map_[hwnd_] = this;
             }
         }
+        return *this;
+    }
 
-        return DefWindowProc(hwnd, msg, wp, lp) ;
-	}
+    ~Window() noexcept {
+        destroy();
+    }
 
-	static LRESULT CALLBACK initEventHandler(HWND hwnd, unsigned msg, WPARAM wp, LPARAM lp) noexcept {
-		Window* w = nullptr ;
+public:
+    // Disable copy operations
+    Window(const Window&) = delete;
+    Window& operator=(const Window&) = delete;
 
-		if (msg == WM_NCCREATE) {
+    // Window operations
+    void show(int cmd = SW_SHOW) noexcept {
+        ShowWindow(hwnd_, cmd);
+        UpdateWindow(hwnd_);
+    }
 
-			CREATESTRUCT* cs = reinterpret_cast<CREATESTRUCT*>(lp) ;
-			w = reinterpret_cast<Window*>(cs->lpCreateParams) ;
+    void hide() noexcept { ShowWindow(hwnd_, SW_HIDE); }
+    void minimize() noexcept { ShowWindow(hwnd_, SW_MINIMIZE); }
+    void maximize() noexcept { ShowWindow(hwnd_, SW_MAXIMIZE); }
+    void restore() noexcept { ShowWindow(hwnd_, SW_RESTORE); }
+    void close() noexcept { should_close_.store(true, std::memory_order_relaxed); }
 
-			SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(w)) ;
+    // Getters
+    HWND handle() const noexcept { return hwnd_; }
+    constexpr const Quad& bounds() const noexcept { return bounds_; }
+    constexpr cstr title() const noexcept { return title_.c_str(); }
+    constexpr uint32_t width() const noexcept { return bounds_.Width; }
+    constexpr uint32_t height() const noexcept { return bounds_.Height; }
+    SZ size() const noexcept { return bounds_.getSize(); }
+    PT position() const noexcept { return bounds_.getPos(); }
+    
+    bool should_close() const noexcept { 
+        return should_close_.load(std::memory_order_relaxed); 
+    }
+    
+    bool is_valid() const noexcept { 
+        return hwnd_ && IsWindow(hwnd_); 
+    }
 
-			hwndmap[hwnd] = w ;
+    // Setters with performance optimization
+    void set_title(cstr new_title) noexcept {
+        title_ = new_title;
+        SetWindowTextA(hwnd_, new_title);
+    }
 
-		} else 
-			w = reinterpret_cast<Window*>(GetWindowLongPtr(hwnd, GWLP_USERDATA)) ;
+    template<typename T>
+    void set_size(T w, T h) noexcept requires std::is_integral_v<T> {
+        bounds_.setSize(static_cast<int>(w), static_cast<int>(h));
+        SetWindowPos(hwnd_, nullptr, 0, 0, bounds_.Width, bounds_.Height, 
+                    SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+    }
 
-		if (w)
-			return w->HandleMsg(hwnd, msg, wp, lp) ;
+    template<typename T>
+    void set_position(T x, T y) noexcept requires std::is_integral_v<T> {
+        bounds_.setPos(static_cast<int>(x), static_cast<int>(y));
+        SetWindowPos(hwnd_, nullptr, bounds_.X, bounds_.Y, 0, 0, 
+                    SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+    }
 
-		return DefWindowProc(hwnd, msg, wp, lp) ;
-	}
+    void set_position(const PT& pos) noexcept {
+        set_position(pos.X, pos.Y);
+    }
 
-protected :
-	Window(const Window&) = delete ;
-	Window& operator=(const Window&) = delete ;
+    void set_bounds(const Quad& new_bounds) noexcept {
+        bounds_ = new_bounds;
+        SetWindowPos(hwnd_, nullptr, bounds_.X, bounds_.Y, 
+                    bounds_.Width, bounds_.Height, SWP_NOZORDER | SWP_NOACTIVATE);
+    }
 
-	Window(cstr title, unsigned long long width, unsigned long long height, unsigned long long pos_x = 0U, unsigned long long pos_y = 0U) noexcept : m_bound(pos_x, pos_y, width, height), m_title(title), m_hInstance(GetModuleHandle(nullptr)) {
-		registerWindowClass() ;
-        createWindow() ;
-        SetWindowLongPtr(m_hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this)) ;
-	}
+    // Client area operations
+    SZ get_client_size() const noexcept {
+        RECT r;
+        GetClientRect(hwnd_, &r);
+        return {r.right - r.left, r.bottom - r.top};
+    }
 
-	Window(cstr title, const SZ& size) noexcept : m_bound(PT{}, size), m_title(title), m_hInstance(GetModuleHandle(nullptr)) {
-		registerWindowClass() ;
-        createWindow() ;
-        SetWindowLongPtr(m_hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this)) ;
-	}
+    Quad get_client_bounds() const noexcept {
+        RECT r;
+        GetClientRect(hwnd_, &r);
+        return {0, 0, r.right - r.left, r.bottom - r.top};
+    }
 
-	Window(cstr title, const PT& pos, const SZ& size) noexcept : m_bound(pos, size), m_title(title), m_hInstance(GetModuleHandle(nullptr)) {
-		registerWindowClass() ;
-        createWindow() ;
-        SetWindowLongPtr(m_hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this)) ;
-	}
+    // Coordinate transformations
+    PT screen_to_client(const PT& screen_pos) const noexcept {
+        POINT pt = static_cast<POINT>(screen_pos);
+        ScreenToClient(hwnd_, &pt);
+        return {pt.x, pt.y};
+    }
 
-	Window(cstr title, const RECT& bound) noexcept : m_bound(bound), m_title(title), m_hInstance(GetModuleHandle(nullptr)) {
-		registerWindowClass() ;
-        createWindow() ;
-        SetWindowLongPtr(m_hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this)) ;
-	}
+    PT client_to_screen(const PT& client_pos) const noexcept {
+        POINT pt = static_cast<POINT>(client_pos);
+        ClientToScreen(hwnd_, &pt);
+        return {pt.x, pt.y};
+    }
 
-	Window(cstr title, const Quad& bound) noexcept : m_bound(bound), m_title(title), m_hInstance(GetModuleHandle(nullptr)) {
-		registerWindowClass() ;
-        createWindow() ;
-        SetWindowLongPtr(m_hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this)) ;
-	}
+    // Utility functions
+    void center_on_screen() noexcept {
+        PT screen_size{GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)};
+        PT window_size = static_cast<PT>(get_client_size());
+        PT centered_pos = (screen_size - window_size) / 2 ;
+        set_position(centered_pos.X, centered_pos.Y) ;
+    }
 
-	Window(Window&& o) noexcept : m_hwnd(o.m_hwnd), m_hInstance(o.m_hInstance), m_bound(o.m_bound), m_title(std::move(o.m_title)) {
-		o.m_hwnd = nullptr ;
-		o.m_hInstance = nullptr ;
-		if (m_hwnd) 
-			SetWindowLongPtr(m_hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this)) ;
-	}
+    bool contains_point(const PT& pt) const noexcept {
+        Quad client_bounds = get_client_bounds();
+        return pt.X >= client_bounds.X && pt.X < client_bounds.X + client_bounds.Width &&
+               pt.Y >= client_bounds.Y && pt.Y < client_bounds.Y + client_bounds.Height;
+    }
 
-	Window& operator=(Window&& o) noexcept {
-		if (this != &o) {
+    // Event system
+    bool has_events() const noexcept { return !events_.empty(); }
+    
+    void clear_events() noexcept {
+        std::queue<Event, std::deque<Event>> empty;
+        events_.swap(empty);
+    }
 
-			m_hwnd = o.m_hwnd ;
-			m_hInstance = o.m_hInstance ;
-			m_bound = o.m_bound ;
-			m_title = std::move(o.m_title) ;
-
-			o.m_hwnd = nullptr ;
-			o.m_hInstance = nullptr ;
-
-			if (m_hwnd) 
-				SetWindowLongPtr(m_hwnd, GWLP_USERDATA, reinterpret_cast<long long>(this)) ;
-		}
-
-		return *this ;
-	}
-
-	~Window() noexcept { destroy() ; }
-
-	HWND getHandle() noexcept { 
-		return m_hwnd ; 
-	}
-
-public :
-
-	void show() noexcept { 
-		ShowWindow(m_hwnd, WinFg::SHOW) ; 
-		UpdateWindow(m_hwnd) ; 
-	}
-
-	void hide() noexcept { 
-		ShowWindow(m_hwnd, WinFg::HIDE) ; 
-	}
-
-    void minimize() { 
-		ShowWindow(m_hwnd, WinFg::MINIMIZE) ; 
-	}
-
-    void maximize() { 
-		ShowWindow(m_hwnd, WinFg::MAXIMIZE) ; 
-	}
-
-    void restore() { 
-		ShowWindow(m_hwnd, WinFg::RESTORE) ; 
-	}
-
-	HWND getHandle() const noexcept { 
-		return m_hwnd ; 
-	}
-
-	unsigned long long width() const noexcept { 
-		return m_bound.Width ; 
-	}
-
-	unsigned long long height() const noexcept { 
-		return m_bound.Height ; 
-	}
-
-	SZ Size() const noexcept { 
-		return m_bound.getSize() ; 
-	}
-
-	PT Position() const noexcept { 
-		return m_bound.getPos() ; 
-	}
-
-	const Quad& Bound() const noexcept { 
-		return m_bound ; 
-	} ;
-
-	cstr title() const noexcept { 
-		return m_title ; 
-	}
-
-    void setTitle(const char* title) noexcept { 
-		m_title = title ; 
-		SetWindowText(m_hwnd, title) ; 
-	}
-
-    template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>> 
-	void setSize(T w, T h) noexcept { 
-		SetWindowPos(m_hwnd, nullptr, 0, 0, (m_bound.Width = w) , (m_bound.Height = h), SWP_NOMOVE | SWP_NOZORDER) ; 
-	}
-
-    template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>> 
-	void setPosition(T x, T y) noexcept { 
-		SetWindowPos(m_hwnd, nullptr, (m_bound.X = x), (m_bound.X = y), 0 , 0, SWP_NOSIZE | SWP_NOZORDER) ; 
-	}
-
-	void setSize(const SZ& size) noexcept { 
-		SetWindowPos(m_hwnd, nullptr, 0, 0, (m_bound.Width = size.Width) , (m_bound.Height = size.Height), SWP_NOMOVE | SWP_NOZORDER) ; 
-	}
-
-    void setPosition(const PT& pos) noexcept { 
-		SetWindowPos(m_hwnd, nullptr, (m_bound.X = pos.X), (m_bound.Y = pos.Y), 0 , 0, SWP_NOSIZE | SWP_NOZORDER) ; 
-	}
-
-	void setBound(const Quad& bound) noexcept { 
-		SetWindowPos(m_hwnd, nullptr, (m_bound.X = bound.X), (m_bound.Y = bound.Y), (m_bound.Width = bound.Width) , (m_bound.Height = bound.Height), SWP_NOZORDER) ; 
-	}
-
-	bool shouldClose() const noexcept { 
-		return m_shouldclose ; 
-	}
-
-	void close() noexcept { 
-		m_shouldclose = true ; 
-	}
-
-	bool isValid() const noexcept { 
-		return m_hwnd && IsWindow(m_hwnd) ; 
-	}
-
-	void getClientSize(int& w, int& h) const noexcept { 
-		RECT r ; 
-		GetClientRect(m_hwnd, &r) ; 
-		w = r.right - r.left ; 
-		h = r.bottom - r.top ; 
-	}
-
-	SZ getClientSize() const noexcept { 
-		return getClientBound().getSize() ; 
-	}
-
-	Quad getClientBound() const noexcept { 
-		RECT r1 ; 
-		GetClientRect(m_hwnd, &r1) ; 
-		return Quad{PT{}, SZ{r1.right - r1.left, r1.bottom - r1.top}} ; 
-	}
-
-	bool hasEvents() const { 
-		return !m_events.empty() ; 
-	}
-
-	void clearEvents() noexcept { 
-		while (!m_events.empty()) 
-			m_events.pop() ; 
-	}
-
-	static int getWindowCount() noexcept { 
-		return nwindow ; 
-	}
-
-    static void quitApplication() noexcept { 
-		PostQuitMessage(0) ; 
-	}
-
-
-	bool pollEvent(Event& e) noexcept {
-        if (!m_events.empty()) {
-
-            e = m_events.front();
-            m_events.pop();
-
+    bool poll_event(Event& event) noexcept {
+        if (!events_.empty()) {
+            event = std::move(events_.front());
+            events_.pop();
             return true;
         }
-
         return false;
     }
 
-	static bool pollEventFromWindow(HWND hwnd, Event& e) noexcept {
-        auto it = hwndmap.find(hwnd);
-
-        if (it != hwndmap.end()) 
-            return it->second->pollEvent(e);
-
-        return false;
+    // Static operations
+    static uint8_t get_window_count() noexcept {
+        return window_count_.load(std::memory_order_relaxed);
     }
 
-	static void processMessages() noexcept {
+    static void quit_application() noexcept {
+        PostQuitMessage(0);
+    }
+
+    static void process_messages() noexcept {
         MSG msg;
-
-        while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+        while (PeekMessageA(&msg, nullptr, 0, 0, PM_REMOVE)) {
             TranslateMessage(&msg);
-            DispatchMessage(&msg);
+            DispatchMessageA(&msg);
         }
     }
-	
-	void centerOnScreen() noexcept {
-        PT screensize = {GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)} ;
-		PT wsize = static_cast<PT>(getClientSize()) ;
 
-        setPosition((screensize - wsize) / 2) ;
+    static bool poll_event_from_window(HWND hwnd, Event& event) noexcept {
+        auto it = hwnd_map_.find(hwnd);
+        return (it != hwnd_map_.end()) ? it->second->poll_event(event) : false;
     }
+};
 
-	bool containsPoint(const PT& pt) const noexcept {
-        Quad b = getClientBound();
-        return pt.X >= b.X && pt.X < b.X + b.Width && pt.Y >= b.Y && pt.Y < b.Y + b.Height ;
-    }
-
-	PT screenToClient(const PT& pos) const noexcept {
-        POINT pt = static_cast<POINT>(pos) ;
-        ScreenToClient(m_hwnd, &pt) ;
-
-        return PT(pt.x, pt.y) ;
-    }
-
-    PT clientToScreen(const PT& pos) const {
-        POINT pt = static_cast<POINT>(pos) ;
-
-        ClientToScreen(m_hwnd, &pt) ;
-        return PT(pt.x, pt.y) ;
-    }
-
-	#ifdef ZWINDOW_DEBUG
-
-	unsigned long long getEventCount() const {
-        return m_events.size() ;
-    }
-
-	#endif
-
-} ;
-
-#ifdef USE_ZREGISTRY_HELPER
-#undef USE_ZREGISTRY_HELPER
-#endif
-
-#ifdef USE_Z_ALIAS
-#undef USE_Z_ALIAS
-#endif
+// No static member definitions needed - using inline static members
