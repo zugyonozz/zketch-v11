@@ -1,10 +1,8 @@
-// #define ZWINDOW_DEBUG
-// #define DEBUG_ALL
-
 #include <iostream>
-#include "../includes/zwindow.h"
-#include "../includes/ztimer.h"
-#include "../includes/zdrawer.h"
+#include "zwindow.h"
+#include "ztimer.h"
+#include "zdrawer.h"
+#include "zgdiplusinit.h"
 
 class win : public Window<win> {
 public :

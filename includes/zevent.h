@@ -1,9 +1,8 @@
 #pragma once
 
+#include "zdef.h"
 #include <windowsx.h>
 #include "zunit.h"
-
-#define USE_Z_ALIAS
 
 enum class EventType : uchar {
     None,
@@ -75,5 +74,3 @@ Event createMouseEvent(EventType type, PT position, MouseButton button) noexcept
 Event createResizeEvent(SZ size) noexcept ;
 
 Event createKeyEvent(EventType type, int keyCode) noexcept ;
-
-#undef USE_Z_ALIAS

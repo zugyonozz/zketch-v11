@@ -1,8 +1,7 @@
 #pragma once
 
-#define USE_Z_ALIAS
-
 #include "zunit.h"
+#include "zdef.h"
 
 class Bitmap {
 private :
@@ -41,5 +40,3 @@ public :
 } ;
 
 HBITMAP LoadBMP(cstr path) noexcept ;
-
-#undef USE_Z_ALIAS

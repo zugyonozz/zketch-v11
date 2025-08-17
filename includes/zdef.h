@@ -1,27 +1,18 @@
 #pragma once
 
 #define WIN32_LEAN_AND_MEAN
-#include <string>
+
+#ifdef NOMINMAX
+#define NOMINMAX
+#endif
+
+#undef __OBJC__
+
 #include <windows.h>
 
-#define USE_Z_ALIAS
-
-#ifdef USE_Z_ALIAS
-
 using uchar		= unsigned char ;
-using schar		= signed char ;
-using ushort	= unsigned short ;
-using sshort	= signed short ;
-using uint		= unsigned ;
-using sint		= signed ;
-using ulong		= unsigned long ;
-using slong		= signed long ;
 using ullong	= unsigned long long ;
-using sllong	= long long ;
 using cstr		= const char* ;
-using str		= std::string ;
-
-#endif
 
 struct WinFg {
 	enum : uchar {
@@ -43,5 +34,3 @@ struct WinFg {
 		return static_cast<int>(fg) ; 
 	}
 } ;
-
-#undef USE_Z_ALIAS

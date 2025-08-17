@@ -1,4 +1,4 @@
-#include "../zevent.h"
+#include "zevent.h"
 
 bool Event::isFromWindow(HWND src) const noexcept {
 	return hwnd == src ;

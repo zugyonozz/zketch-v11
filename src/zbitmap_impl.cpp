@@ -1,4 +1,4 @@
-#include "../zbitmap.h"
+#include "zbitmap.h"
 
 Bitmap::Bitmap(HBITMAP bmp) noexcept : hbmp(bmp) {
 	BITMAP bm ;

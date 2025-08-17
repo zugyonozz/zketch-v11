@@ -1,12 +1,8 @@
 #pragma once
 
-#define USE_Z_ALIAS
-
 #include "zdef.h"
-
-#define USE_ZTIMER_HELPER
-
-#ifdef USE_ZTIMER_HELPER
+#include <profileapi.h>
+#include <synchapi.h>
 
 struct nanoseconds_ {
 	static constexpr double val = 1000000000.0 ;
@@ -61,10 +57,8 @@ template <> struct _is_timestamp<hours_> {
 	static constexpr bool val = true ;
 } ;
 
-#endif
-
 template <typename T> constexpr bool is_timestamp = _is_timestamp<T>::val ;
-template <typename T, typename = std::enable_if_t<is_timestamp<T>>> constexpr double get_frequency = T::val ;
+template <typename T> constexpr double get_frequency = T::val ;
 
 class Timer {
 private :
@@ -81,11 +75,11 @@ public :
 		m_t1 = m_t0 ;
 	}
 
-	void delay(ulong ms) noexcept {
+	void delay(ullong ms) noexcept {
 		Sleep(ms) ;
 	}
 
-	template <typename T, typename = std::enable_if_t<is_timestamp<T>>>
+	template <typename T> requires is_timestamp<T>
 	double duration() noexcept {
 		QueryPerformanceCounter(&m_t1) ;
 		return static_cast<double>(m_t1.QuadPart - m_t0.QuadPart) * get_frequency<T> / m_f.QuadPart ;
@@ -96,6 +90,3 @@ public :
 		QueryPerformanceCounter(&m_t0) ;
 	}
 } ;
-
-#undef USE_ZTIMER_HELPER
-#undef USE_Z_ALIAS

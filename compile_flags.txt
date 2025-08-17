@@ -1,0 +1,12 @@
+# Baris ini memberitahu Clangd untuk menggunakan standar C++20
+-std=c++20
+
+# Opsi warning, sama seperti yang kamu pakai di command line
+-Wall
+-Wextra
+
+# =================================================================
+# INI BAGIAN PALING PENTING
+# Baris ini memberitahu Clangd di mana "buku pelajaran" MinGW disimpan
+# =================================================================
+-IC:/msys64/mingw64/include

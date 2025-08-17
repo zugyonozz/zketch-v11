@@ -1,17 +1,27 @@
 #pragma once
 
-#undef __OBJC__
-
-#define WIN32_LEAN_AND_MEAN
-
 #include <ostream>
 #include <vector>
-#include "zdef.h"
-#include "zgdiplusinit.h"
 
-typedef Gdiplus::Color Color ;
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 
-#define USE_ZUNIT_HELPER
+#define WIN32_LEAN_AND_MEAN // Ini juga praktik yang baik
+#include <minwindef.h>
+#include <objidl.h>
+#include <windef.h>
+
+#pragma push_macro("min")
+#pragma push_macro("max")
+#undef min
+#undef max
+#include <gdiplus.h>
+#pragma pop_macro("min")
+#pragma pop_macro("max")
+
+#undef near
+#undef far
 
 // forward declaration
 
@@ -24,41 +34,50 @@ struct QuadF ;
 
 // template spesialize for type checking
 
-template <typename> struct is_zunit_ {
+template <typename> struct is_size_unit_ {
 	static constexpr bool val = false ;
 } ;
 
-template <> struct is_zunit_<SZ> {
+template <> struct is_size_unit_<SZ> {
 	static constexpr bool val = true ;
 } ;
 
-template <> struct is_zunit_<SZF> {
+template <> struct is_size_unit_<SZF> {
 	static constexpr bool val = true ;
 } ;
 
-template <> struct is_zunit_<PT> {
+template <typename> struct is_point_unit_ {
+	static constexpr bool val = false ;
+} ;
+
+template <> struct is_point_unit_<PT> {
 	static constexpr bool val = true ;
 } ;
 
-template <> struct is_zunit_<PTF> {
+template <> struct is_point_unit_<PTF> {
+	static constexpr bool val = true ;
+} ;
+namespace z_helper {
+template <typename T> constexpr bool is_paired_data_unit = is_point_unit_<T>::val || is_size_unit_<T>::val ;
+}
+
+template <typename> struct is_bound_unit_ {
+	static constexpr bool val = false ;
+} ;
+
+template <> struct is_bound_unit_<Quad> {
 	static constexpr bool val = true ;
 } ;
 
-template <> struct is_zunit_<Quad> {
+template <> struct is_bound_unit_<QuadF> {
 	static constexpr bool val = true ;
 } ;
-
-template <> struct is_zunit_<QuadF> {
-	static constexpr bool val = true ;
-} ;
-
-template <typename T> constexpr bool is_zunit = is_zunit_<T>::val ;
 
 // implementation zunit.h
 
 struct PT : Gdiplus::Point {
 
-	using Base = Gdiplus::Point ;
+	using Base = Point ;
 
 	PT() noexcept ;
 
@@ -82,9 +101,6 @@ struct PT : Gdiplus::Point {
 	
 	explicit PT(const tagPOINTS& o) noexcept ;
 
-	template <typename T, typename U, typename = std::enable_if_t<std::is_arithmetic_v<std::remove_cv_t<std::remove_reference_t<T>>> && std::is_arithmetic_v<std::remove_cv_t<std::remove_reference_t<U>>>>> 
-	constexpr PT(const std::pair<T&, U&>& pt) noexcept : Base(static_cast<int>(pt.first), static_cast<int>(pt.second)) {}
-	
 	constexpr PT& operator=(int v) noexcept ;
 
 	constexpr PT& operator=(const PT& o) noexcept ;
@@ -94,13 +110,6 @@ struct PT : Gdiplus::Point {
 	constexpr PT& operator=(const SZ& o) noexcept ;
 
 	constexpr PT& operator=(const SZF& o) noexcept ;
-
-	template <typename T, typename U, typename = std::enable_if_t<std::is_arithmetic_v<std::remove_cv_t<std::remove_reference_t<T>>> && std::is_arithmetic_v<std::remove_cv_t<std::remove_reference_t<U>>>>> 
-	constexpr PT& operator=(const std::pair<T&, U&>& pt) noexcept {
-		X = static_cast<int>(pt.first) ;
-		Y = static_cast<int>(pt.second) ;
-		return *this ;
-	}
 	
     PT operator+() const noexcept ;
 
@@ -166,15 +175,11 @@ PT operator-(int v, const PT& a) noexcept ;
 
 PT operator/(int v, const PT& a) noexcept ;
 
-#ifdef ZUNIT_DEBUG
-
-std::ostream& operator<<(std::ostream& os, const PT& pt) const noexcept ;
-
-#endif
+std::ostream& operator<<(std::ostream& os, const PT& pt) noexcept ;
 
 struct SZ : Gdiplus::Size {
 
-	using Base = Gdiplus::Size ;
+	using Base = Size ;
 
 	SZ() noexcept ;
 
@@ -198,9 +203,6 @@ struct SZ : Gdiplus::Size {
 	
 	SZ(const tagPOINTS& o) noexcept ;
 
-	template <typename T, typename U, typename = std::enable_if_t<std::is_arithmetic_v<std::remove_cv_t<std::remove_reference_t<T>>> && std::is_arithmetic_v<std::remove_cv_t<std::remove_reference_t<U>>>>> 
-	constexpr SZ(const std::pair<T&, U&>& sz) noexcept : Base(static_cast<int>(sz.first), static_cast<int>(sz.second)) {}
-	
 	constexpr SZ& operator=(int v) noexcept ;
 
 	constexpr SZ& operator=(const SZ& o) noexcept ;
@@ -210,13 +212,6 @@ struct SZ : Gdiplus::Size {
 	constexpr SZ& operator=(const PT& o) noexcept ;
 
 	constexpr SZ& operator=(const PTF& o) noexcept ;
-
-	template <typename T, typename U, typename = std::enable_if_t<std::is_arithmetic_v<std::remove_cv_t<std::remove_reference_t<T>>> && std::is_arithmetic_v<std::remove_cv_t<std::remove_reference_t<U>>>>> 
-	constexpr SZ& operator=(const std::pair<T&, U&>& pt) noexcept {
-		Width = static_cast<int>(pt.first) ;
-		Height = static_cast<int>(pt.second) ;
-		return *this ;
-	}
 	
     SZ operator+() const noexcept ;
 
@@ -282,15 +277,11 @@ SZ operator-(int v, const SZ& a) noexcept ;
 
 SZ operator/(int v, const SZ& a) noexcept ;
 
-#ifdef ZUNIT_DEBUG
-
-std::ostream& operator<<(std::ostream& os, const SZ& sz) const noexcept ;
-
-#endif
+std::ostream& operator<<(std::ostream& os, const SZ& sz) noexcept ;
 
 struct PTF : Gdiplus::PointF {
 
-	using Base = Gdiplus::PointF ;
+	using Base = PointF ;
 
 	PTF() noexcept ;
 
@@ -314,9 +305,6 @@ struct PTF : Gdiplus::PointF {
 	
 	PTF(const tagPOINTS& o) noexcept ;
 
-	template <typename T, typename U, typename = std::enable_if_t<std::is_arithmetic_v<std::remove_cv_t<std::remove_reference_t<T>>> && std::is_arithmetic_v<std::remove_cv_t<std::remove_reference_t<U>>>>> 
-	constexpr PTF(const std::pair<T&, U&>& pt) noexcept : Base(static_cast<float>(pt.first), static_cast<float>(pt.second)) {}
-	
 	constexpr PTF& operator=(float v) noexcept ;
 
 	constexpr PTF& operator=(const PTF& o) noexcept ;
@@ -326,14 +314,6 @@ struct PTF : Gdiplus::PointF {
 	constexpr PTF& operator=(const SZ& o) noexcept ;
 
 	constexpr PTF& operator=(const SZF& o) noexcept ;
-	
-
-	template <typename T, typename U, typename = std::enable_if_t<std::is_arithmetic_v<std::remove_cv_t<std::remove_reference_t<T>>> && std::is_arithmetic_v<std::remove_cv_t<std::remove_reference_t<U>>>>> 
-	constexpr PTF& operator=(const std::pair<T&, U&>& pt) noexcept {
-		X = static_cast<float>(pt.first) ;
-		Y = static_cast<float>(pt.second) ;
-		return *this ;
-	}
 	
     PTF operator+() const noexcept ;
 
@@ -399,15 +379,11 @@ PTF operator-(float v, const PTF& a) noexcept ;
 
 PTF operator/(float v, const PTF& a) noexcept ;
 
-#ifdef ZUNIT_DEBUG
-
-std::ostream& operator<<(std::ostream& os, const PTF& ptf) const noexcept ;
-
-#endif
+std::ostream& operator<<(std::ostream& os, const PTF& ptf) noexcept ;
 
 struct SZF : Gdiplus::SizeF {
 
-	using Base = Gdiplus::SizeF ;
+	using Base = SizeF ;
 
 	SZF() noexcept ;
 
@@ -431,9 +407,6 @@ struct SZF : Gdiplus::SizeF {
 	
 	SZF(const tagPOINTS& o) noexcept ;
 
-	template <typename T, typename U, typename = std::enable_if_t<std::is_arithmetic_v<std::remove_cv_t<std::remove_reference_t<T>>> && std::is_arithmetic_v<std::remove_cv_t<std::remove_reference_t<U>>>>> 
-	constexpr SZF(const std::pair<T&, U&>& sz) noexcept : Base(static_cast<float>(sz.first), static_cast<float>(sz.second)) {}
-	
 	constexpr SZF& operator=(int v) noexcept ;
 	
 	constexpr SZF& operator=(const SZF& o) noexcept ;
@@ -443,13 +416,6 @@ struct SZF : Gdiplus::SizeF {
 	constexpr SZF& operator=(const PT& o) noexcept ;
 
 	constexpr SZF& operator=(const PTF& o) noexcept ;
-
-	template <typename T, typename U, typename = std::enable_if_t<std::is_arithmetic_v<std::remove_cv_t<std::remove_reference_t<T>>> && std::is_arithmetic_v<std::remove_cv_t<std::remove_reference_t<U>>>>> 
-	constexpr SZF& operator=(const std::pair<T&, U&>& pt) noexcept {
-		Width = static_cast<float>(pt.first) ;
-		Height = static_cast<float>(pt.second) ;
-		return *this ;
-	}
 	
     SZF operator+() const noexcept ;
 
@@ -515,15 +481,11 @@ SZF operator-(float v, const SZF& a) noexcept ;
 
 SZF operator/(float v, const SZF& a) noexcept ;
 
-#ifdef ZUNIT_DEBUG
-
-std::ostream& operator<<(std::ostream& os, const SZ& sz) const noexcept ;
-
-#endif
+std::ostream& operator<<(std::ostream& os, const SZ& sz) noexcept ;
 
 struct Quad : Gdiplus::Rect {
 
-	using Base = Gdiplus::Rect ;
+	using Base = Rect ;
 
 	Quad() noexcept ;
 
@@ -531,8 +493,8 @@ struct Quad : Gdiplus::Rect {
 
 	Quad(int x, int y, int w, int h) noexcept ;
 
-	template <typename T, typename U, typename = std::enable_if_t<is_zunit<T> && is_zunit<U>>> 
-	Quad(const T& pos, const U& size) noexcept : Base(pos, size) {}
+	template <typename T, typename U> requires z_helper::is_paired_data_unit<T> && z_helper::is_paired_data_unit<U>
+	Quad(const T& p, const U& s) noexcept : Base(p, s) {}
 
 	Quad(const Quad& o) noexcept ;
 
@@ -623,15 +585,11 @@ Quad operator+(int v, const Quad& a) noexcept ;
 
 Quad operator*(int v, const Quad& a) noexcept ;
 
-#ifdef ZUNIT_DEBUG
-
-std::ostream& operator<<(std::ostream& os, const Quad& q) const noexcept ;
-
-#endif
+std::ostream& operator<<(std::ostream& os, const Quad& q) noexcept ;
 
 struct QuadF : Gdiplus::RectF {
 
-	using Base = Gdiplus::RectF ;
+	using Base = RectF ;
 
 	QuadF() noexcept ;
 
@@ -639,7 +597,8 @@ struct QuadF : Gdiplus::RectF {
 
 	QuadF(float x, float y, float w, float h) noexcept ;
 
-	QuadF(const PTF& pos, const SZF& size) noexcept ;
+	template <typename T, typename U> requires z_helper::is_paired_data_unit<T> && z_helper::is_paired_data_unit<U>
+	QuadF(const T& p, const U& s) noexcept : Base(p, s) {}
 
 	QuadF(const QuadF& o) noexcept ;
 
@@ -730,12 +689,7 @@ QuadF operator+(float v, const QuadF& a) noexcept ;
 
 QuadF operator*(float v, const QuadF& a) noexcept ;
 
-#ifdef ZUNIT_DEBUG
-
-std::ostream& operator<<(std::ostream& os, const QuadF& qf) const noexcept ;
-
-#endif
+std::ostream& operator<<(std::ostream& os, const QuadF& qf) noexcept ;
 
 using Vertex = std::vector<PT> ;
-
-#undef USE_ZUNIT_HELPER
+using Color = Gdiplus::Color ;

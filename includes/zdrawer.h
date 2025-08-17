@@ -1,8 +1,12 @@
 #pragma once
 
+#include "zunit.h"
+
 #define USE_Z_ALIAS
 
-#include "zbitmap.h"
+#ifdef USE_Z_ALIAS 
+using uint = unsigned int ;
+#endif
 
 // Basic rectangle drawing
 void drawRect(HDC hdc, const QuadF& rect, const Color& fill, const Color& outline, uint thickness = 1) noexcept;
@@ -22,4 +26,4 @@ void drawArc(HDC hdc, const QuadF& rect, float startAngle, float sweepAngle, con
 // Pie drawing
 void drawPie(HDC hdc, const QuadF& rect, float start, float end, const Color& fill, const Color& outline, uint thickness = 1) noexcept;
 
-#undef USE_Z_ALIAS
+#define USE_Z_ALIAS

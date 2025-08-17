@@ -1,4 +1,4 @@
-#include "../zunit.h"
+#include "zunit.h"
 
 PT::PT() noexcept : Base() {}
 
@@ -242,13 +242,9 @@ PT operator/(int v, const PT& a) noexcept {
 	} ; 
 }
 
-#ifdef ZUNIT_DEBUG
-
-std::ostream& operator<<(std::ostream& os, const PT& pt) const noexcept {
+std::ostream& operator<<(std::ostream& os, const PT& pt) noexcept {
 	return os << "{" << pt.X << ", " << pt.Y << "}" ;
 }
-
-#endif
 
 SZ::SZ() noexcept : Base() {}
 
@@ -492,13 +488,9 @@ SZ operator/(int v, const SZ& a) noexcept {
 	} ; 
 }
 
-#ifdef ZUNIT_DEBUG
-
-std::ostream& operator<<(std::ostream& os, const SZ& sz) const noexcept {
+std::ostream& operator<<(std::ostream& os, const SZ& sz) noexcept {
 	return os << "{" << sz.Height << ", " << sz.Width << "}" ;
 }
-
-#endif
 
 PTF::PTF() noexcept : Base() {}
 
@@ -742,13 +734,9 @@ PTF operator/(float v, const PTF& a) noexcept {
 	} ; 
 }
 
-#ifdef ZUNIT_DEBUG
-
-std::ostream& operator<<(std::ostream& os, const PTF& ptf) const noexcept {
+std::ostream& operator<<(std::ostream& os, const PTF& ptf) noexcept {
 	return os << "{" << ptf.X << ", " << ptf.Y << "}" ;
 }
-
-#endif
 
 SZF::SZF() noexcept : Base() {}
 
@@ -989,13 +977,9 @@ SZF operator/(float v, const SZF& a) noexcept {
 	} ; 
 }
 
-#ifdef ZUNIT_DEBUG
-
-std::ostream& operator<<(std::ostream& os, const SZ& sz) const noexcept {
-	return os << "{" << sz.Height << ", " << sz.Width << "}" ;
+std::ostream& operator<<(std::ostream& os, const SZF& szf) noexcept {
+	return os << "{" << szf.Height << ", " << szf.Width << "}" ;
 }
-
-#endif
 
 Quad::Quad() noexcept : Base() {}
 
@@ -1289,22 +1273,15 @@ Quad operator/(int v, const Quad& a) noexcept {
 	} ; 
 }
 
-#ifdef ZUNIT_DEBUG
-
-template <typename T> 
-std::ostream& operator<<(std::ostream& os, const Quad& q) const noexcept {
+std::ostream& operator<<(std::ostream& os, const Quad& q) noexcept {
 	return os << "{" << q.X << ", " << q.Y << ", " << q.Width << ", " << q.Height << "}" ;
 }
-
-#endif
 
 QuadF::QuadF() noexcept : Base() {}
 
 QuadF::QuadF(float v) noexcept : Base(v, v, v, v) {}
 
 QuadF::QuadF(float x, float y, float w, float h) noexcept : Base(x, y, w, h) {}
-
-QuadF::QuadF(const PTF& pos, const SZF& size) noexcept : Base(pos, size) {}
 
 QuadF::QuadF(const QuadF& o) noexcept : Base(o) {}
 
@@ -1592,11 +1569,6 @@ QuadF operator/(float v, const QuadF& a) noexcept {
 	} ; 
 }
 
-#ifdef ZUNIT_DEBUG
-
-template <typename T> 
-std::ostream& operator<<(std::ostream& os, const QuadF& qf) const noexcept {
+std::ostream& operator<<(std::ostream& os, const QuadF& qf) noexcept {
 	return os << "{" << qf.X << ", " << qf.Y << ", " << qf.Width << ", " << qf.Height << "}" ;
 }
-
-#endif

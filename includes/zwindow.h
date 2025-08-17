@@ -1,10 +1,18 @@
 #pragma once
 
-#include "zevent.h"
-#include <unordered_map>
 #include <queue>
+#include <unordered_map>
+#include <string>
+#include <deque> 
 
-#define USE_Z_ALIAS
+#define WIN32_LEAN_AND_MEAN
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+
+#include <zunit.h>
+#include "zevent.h"
 
 namespace error_handler {
 
@@ -22,30 +30,10 @@ namespace error_handler {
 
 }
 
-template <typename T, auto MethodPtr, typename... Args>
-struct has_method_ {
-    template <typename U>
-    static auto test(int) -> decltype((std::declval<U>().*MethodPtr)(std::declval<Args>()...), std::true_type{});
-    
-    template <typename>
-    static auto test(...) -> std::false_type;
-
-    static constexpr bool value = decltype(test<T>(0))::value;
-};
-
-template <typename T, auto MethodPtr, typename... Args>
-constexpr bool has_method = has_method_<T, MethodPtr, Args...>::value;
-
-template <typename Derived>
+template <typename Derived> 
 class Window {
 private :
-
-	#ifdef USE_Z_ALIAS
-
 	using HWNDM = std::unordered_map<HWND, Window*> ;
-	using QE = std::queue<Event> ;
-
-	#endif
 
 	// non-static member
 	HWND m_hwnd = nullptr ;
@@ -53,15 +41,15 @@ private :
 	Quad m_bound ;
 	cstr m_title ;
 	bool m_shouldclose = false ;
-	QE m_events ;
-	str m_windowID = getWindowID() ;
+	std::queue<Event, std::deque<Event>> m_events ;
+	std::string m_windowID = getWindowID() ;
 
 	// static member
 	static inline HWNDM hwndmap ;
 	static inline uchar nwindow = 0 ;
-	static inline str window_id = "zwindow_" ;
+	static inline std::string window_id = "zwindow_" ;
 
-	static inline str getWindowID() noexcept {
+	static inline std::string getWindowID() noexcept {
 		return (window_id += std::to_string(nwindow++)) ;
 	}
 
@@ -140,7 +128,7 @@ private :
             UnregisterClass(m_windowID.c_str(), m_hInstance) ;
     }
 
-	LRESULT HandleMsg(HWND hwnd, uint msg, WPARAM wp, LPARAM lp) noexcept {
+	LRESULT HandleMsg(HWND hwnd, unsigned long long msg, WPARAM wp, LPARAM lp) noexcept {
 
 		#ifdef ZWINDOW_DEBUG
 		#if defined(EVENT_RECEIVE) || defined (DEBUG_ALL)
@@ -258,7 +246,7 @@ private :
 
                 PAINTSTRUCT ps ;
                 HDC hdc = BeginPaint(hwnd, &ps) ;
-                if constexpr (has_method<Derived, &Derived::OnPaint, HDC>) {
+                if constexpr (requires (HDC hdc) { std::declval<Derived>().OnPaint(hdc) ; }) {
 
 					#ifdef ZWINDOW_DEBUG
 					#if defined(EVENT_RECEIVE) || defined (DEBUG_ALL)
@@ -279,7 +267,7 @@ private :
         return DefWindowProc(hwnd, msg, wp, lp) ;
 	}
 
-	static LRESULT CALLBACK initEventHandler(HWND hwnd, uint msg, WPARAM wp, LPARAM lp) noexcept {
+	static LRESULT CALLBACK initEventHandler(HWND hwnd, unsigned msg, WPARAM wp, LPARAM lp) noexcept {
 		Window* w = nullptr ;
 
 		if (msg == WM_NCCREATE) {
@@ -304,7 +292,7 @@ protected :
 	Window(const Window&) = delete ;
 	Window& operator=(const Window&) = delete ;
 
-	Window(cstr title, uint width, uint height, uint pos_x = 0U, uint pos_y = 0U) noexcept : m_bound(pos_x, pos_y, width, height), m_title(title), m_hInstance(GetModuleHandle(nullptr)) {
+	Window(cstr title, unsigned long long width, unsigned long long height, unsigned long long pos_x = 0U, unsigned long long pos_y = 0U) noexcept : m_bound(pos_x, pos_y, width, height), m_title(title), m_hInstance(GetModuleHandle(nullptr)) {
 		registerWindowClass() ;
         createWindow() ;
         SetWindowLongPtr(m_hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this)) ;
@@ -353,7 +341,7 @@ protected :
 			o.m_hInstance = nullptr ;
 
 			if (m_hwnd) 
-				SetWindowLongPtr(m_hwnd, GWLP_USERDATA, reinterpret_cast<sllong>(this)) ;
+				SetWindowLongPtr(m_hwnd, GWLP_USERDATA, reinterpret_cast<long long>(this)) ;
 		}
 
 		return *this ;
@@ -392,11 +380,11 @@ public :
 		return m_hwnd ; 
 	}
 
-	uint width() const noexcept { 
+	unsigned long long width() const noexcept { 
 		return m_bound.Width ; 
 	}
 
-	uint height() const noexcept { 
+	unsigned long long height() const noexcept { 
 		return m_bound.Height ; 
 	}
 
@@ -522,7 +510,7 @@ public :
 	
 	void centerOnScreen() noexcept {
         PT screensize = {GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)} ;
-		PT wsize = getClientSize() ;
+		PT wsize = static_cast<PT>(getClientSize()) ;
 
         setPosition((screensize - wsize) / 2) ;
     }
@@ -548,12 +536,10 @@ public :
 
 	#ifdef ZWINDOW_DEBUG
 
-	uint getEventCount() const {
+	unsigned long long getEventCount() const {
         return m_events.size() ;
     }
 
 	#endif
 
 } ;
-
-#undef USE_Z_ALIAS
