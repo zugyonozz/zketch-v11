@@ -13,6 +13,12 @@
 },
 {
   "directory": "D:/Project/zketch-v11/build",
+  "command": "C:\\msys64\\mingw64\\bin\\clang++.exe -ID:/Project/zketch-v11/includes -g -std=gnu++20 -IC:/msys64/mingw64/include -IC:/msys64/mingw64/include/c++/15.2.0 -IC:/msys64/mingw64/include/c++/15.2.0/x86_64-w64-mingw32 -o CMakeFiles\\zketch_v11.dir\\src\\zdef_impl.cpp.obj -c D:\\Project\\zketch-v11\\src\\zdef_impl.cpp",
+  "file": "D:/Project/zketch-v11/src/zdef_impl.cpp",
+  "output": "D:/Project/zketch-v11/build/CMakeFiles/zketch_v11.dir/src/zdef_impl.cpp.obj"
+},
+{
+  "directory": "D:/Project/zketch-v11/build",
   "command": "C:\\msys64\\mingw64\\bin\\clang++.exe -ID:/Project/zketch-v11/includes -g -std=gnu++20 -IC:/msys64/mingw64/include -IC:/msys64/mingw64/include/c++/15.2.0 -IC:/msys64/mingw64/include/c++/15.2.0/x86_64-w64-mingw32 -o CMakeFiles\\zketch_v11.dir\\src\\zdrawer_impl.cpp.obj -c D:\\Project\\zketch-v11\\src\\zdrawer_impl.cpp",
   "file": "D:/Project/zketch-v11/src/zdrawer_impl.cpp",
   "output": "D:/Project/zketch-v11/build/CMakeFiles/zketch_v11.dir/src/zdrawer_impl.cpp.obj"
@@ -28,5 +34,11 @@
   "command": "C:\\msys64\\mingw64\\bin\\clang++.exe -ID:/Project/zketch-v11/includes -g -std=gnu++20 -IC:/msys64/mingw64/include -IC:/msys64/mingw64/include/c++/15.2.0 -IC:/msys64/mingw64/include/c++/15.2.0/x86_64-w64-mingw32 -o CMakeFiles\\zketch_v11.dir\\src\\zunit_impl.cpp.obj -c D:\\Project\\zketch-v11\\src\\zunit_impl.cpp",
   "file": "D:/Project/zketch-v11/src/zunit_impl.cpp",
   "output": "D:/Project/zketch-v11/build/CMakeFiles/zketch_v11.dir/src/zunit_impl.cpp.obj"
+},
+{
+  "directory": "D:/Project/zketch-v11/build",
+  "command": "C:\\msys64\\mingw64\\bin\\clang++.exe -ID:/Project/zketch-v11/includes -g -std=gnu++20 -IC:/msys64/mingw64/include -IC:/msys64/mingw64/include/c++/15.2.0 -IC:/msys64/mingw64/include/c++/15.2.0/x86_64-w64-mingw32 -o CMakeFiles\\zketch_v11.dir\\src\\zwindow_impl.cpp.obj -c D:\\Project\\zketch-v11\\src\\zwindow_impl.cpp",
+  "file": "D:/Project/zketch-v11/src/zwindow_impl.cpp",
+  "output": "D:/Project/zketch-v11/build/CMakeFiles/zketch_v11.dir/src/zwindow_impl.cpp.obj"
 }
 ]

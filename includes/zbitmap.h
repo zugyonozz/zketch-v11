@@ -30,13 +30,13 @@ public :
 
 	Quad& getRect() noexcept ;
 
-	int getHeight() const noexcept ;
+	float getHeight() const noexcept ;
 
-	int getHeight() noexcept ;
+	float getHeight() noexcept ;
 
-	int getWidth() const noexcept ;
+	float getWidth() const noexcept ;
 
-	int getWidth() noexcept ;
+	float getWidth() noexcept ;
 } ;
 
 HBITMAP LoadBMP(cstr path) noexcept ;

@@ -6,23 +6,25 @@
 
 class App : public Window<App> {
 public:
-    App(cstr title, const SZ& size) noexcept : Window(title, size) {}
+    App(cstr title, const Point& size) noexcept : Window(title, size) {}
     
     // Constructor with position support
-    App(cstr title, const SZ& size, const PT& pos) noexcept 
+    App(cstr title, const Point& size, const Point& pos) noexcept 
         : Window(title, size, pos) {}
 
     // OnPaint method - automatically detected by SFINAE
     void OnPaint(HDC hdc) const noexcept {
         // Draw a magenta rectangle with black border
-        drawRect(hdc, QuadF{0, 0, 200, 200}, 
+        drawRect(hdc, Quad{0, 0, 200, 200}, 
                  Color(255, 255, 0, 255),    // Magenta fill
                  Color(255, 0, 0, 0));       // Black outline
         
         // Draw some additional shapes to show performance
-        drawEllipse(hdc, QuadF{50, 50, 100, 100}, 
-                   Color(128, 0, 255, 0),     // Green fill
+        drawEllipse(hdc, Quad{50, 50, 100, 100}, 
+                   Color(255, 128, 255, 0),     // Green fill
                    Color(255, 255, 255, 255)); // White outline
+		// draw text
+		drawText(hdc, L"Hello World", {get_client_bounds().getSize() / 2}, {255, 255, 0, 255}, {L"Arial", 12.5f, GDIPLUS_BOUNDARY::Gdiplus::FontStyleBoldItalic}) ;
     }
 
     // Optional: Custom close handling
@@ -62,11 +64,11 @@ int main() {
                         break;
                         
                     case EventType::MouseMove: {
-                        PT mouse_pos = event.getMousePosition();
+                        Point mouse_pos = event.getMousePosition();
                         
                         static int mouse_counter = 0;
                         if (++mouse_counter % 10 == 0) {
-                            std::cout << "Mouse: {" << mouse_pos.X << ", " << mouse_pos.Y << "}\n";
+                            std::cout << "Mouse: {" << mouse_pos.x << ", " << mouse_pos.y << "}\n";
                         }
                         break;
                     }
@@ -87,7 +89,7 @@ int main() {
                         break;
                         
                     case EventType::Resize: {
-                        SZ new_size = event.getResizeSize();
+                        Point new_size = event.getResizeSize();
                         std::cout << "Window resized to: " << new_size << "\n";
                         break;
                     }

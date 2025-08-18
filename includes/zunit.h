@@ -1,695 +1,811 @@
 #pragma once
 
-#include <ostream>
-#include <vector>
+static_assert(sizeof(unsigned) == 4, "Color_ assumes 32-bit unsigned") ;
 
-#ifndef NOMINMAX
-#define NOMINMAX
+#ifndef IS_LITTLE_ENDIAN
+	#ifdef _MSC_VER
+		#define IS_LITTLE_ENDIAN 1
+	#elif defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+		#define IS_LITTLE_ENDIAN 1
+	#elif defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+		#define IS_LITTLE_ENDIAN 0
+	#else
+		#error "Cannot determine endianness"
+	#endif
 #endif
 
-#define WIN32_LEAN_AND_MEAN // Ini juga praktik yang baik
+#ifndef USE_Z_ALIAS
+#define USE_Z_ALIAS
+#endif
+
+#ifndef USE_ZUNIT_HELPER
+#define USE_ZUNIT_HELPER
+#endif
+
+#include <ostream>
+#include <vector>
+#include <math.h>
+
+#define WIN32_LEAN_AND_MEAN
 #include <minwindef.h>
 #include <objidl.h>
 #include <windef.h>
 
-#pragma push_macro("min")
-#pragma push_macro("max")
-#undef min
-#undef max
-#include <gdiplus.h>
-#pragma pop_macro("min")
-#pragma pop_macro("max")
+namespace GDIPLUS_BOUNDARY {
 
-#undef near
-#undef far
+	#include "zgdiplusinit.h"
+
+}
 
 // forward declaration
 
-struct PT ;
-struct PTF ;
-struct SZ ;
-struct SZF ;
+struct Point ;
+struct PointF ;
+struct Size ;
+struct SizeF ;
 struct Quad ;
 struct QuadF ;
 
+// zunit alias
+
+#ifdef USE_Z_ALIAS
+
+typedef unsigned char uint8 ;
+
+#endif
+
 // template spesialize for type checking
 
-template <typename> struct is_size_unit_ {
+#ifdef USE_ZUNIT_HELPER
+
+template <typename> 
+struct is_size_unit_ {
 	static constexpr bool val = false ;
 } ;
 
-template <> struct is_size_unit_<SZ> {
+template <> 
+struct is_size_unit_<Size> {
 	static constexpr bool val = true ;
 } ;
 
-template <> struct is_size_unit_<SZF> {
+template <> 
+struct is_size_unit_<SizeF> {
 	static constexpr bool val = true ;
 } ;
 
-template <typename> struct is_point_unit_ {
+template <typename> 
+struct is_point_unit_ {
 	static constexpr bool val = false ;
 } ;
 
-template <> struct is_point_unit_<PT> {
+template <> 
+struct is_point_unit_<Point> {
 	static constexpr bool val = true ;
 } ;
 
-template <> struct is_point_unit_<PTF> {
+template <> 
+struct is_point_unit_<PointF> {
 	static constexpr bool val = true ;
 } ;
-namespace z_helper {
-template <typename T> constexpr bool is_paired_data_unit = is_point_unit_<T>::val || is_size_unit_<T>::val ;
+
+template <typename> struct is_quad_unit_ {
+	static constexpr bool val = false ;
+} ;
+
+template <> struct is_quad_unit_<Quad> {
+	static constexpr bool val = true ;
+} ;
+
+template <> struct is_quad_unit_<QuadF> {
+	static constexpr bool val = true ;
+} ;
+
+template <typename T> 
+constexpr bool is_point_unit = is_point_unit_<T>::val ;
+
+template <typename T> 
+constexpr bool is_size_unit = is_size_unit_<T>::val ;
+
+template <typename T> 
+constexpr bool is_pair_unit = is_point_unit<T> || is_size_unit<T> ;
+
+template <typename T>
+constexpr bool is_quad_unit = is_quad_unit_<T>::val ;
+
+template <typename T>
+constexpr bool is_zunit = is_pair_unit<T> || is_quad_unit<T> ;
+
+template <typename T> requires std::is_integral_v<T>
+std::string to_hex(const T& val) {
+    static char hex_chars[] = "0123456789ABCDEF" ;
+    std::string hex;
+    hex.reserve(sizeof(T) * 2) ;
+
+    using U = std::make_unsigned_t<T> ; 
+    U uval = static_cast<U>(val);
+
+    bool leading = true ;
+    for (int i = sizeof(T) * 2 - 1; i >= 0; --i) {
+        unsigned shift = i * 4 ;
+        unsigned nibble = (uval >> shift) & 0xF ;
+        if (nibble != 0 || !leading || i == 0) {
+            hex.push_back(hex_chars[nibble]) ;
+            leading = false ;
+        }
+    }
+
+    return hex;
 }
 
-template <typename> struct is_bound_unit_ {
-	static constexpr bool val = false ;
-} ;
-
-template <> struct is_bound_unit_<Quad> {
-	static constexpr bool val = true ;
-} ;
-
-template <> struct is_bound_unit_<QuadF> {
-	static constexpr bool val = true ;
-} ;
+#endif
 
 // implementation zunit.h
 
-struct PT : Gdiplus::Point {
+struct Point {
+	float x, y ;
 
-	using Base = Point ;
+	constexpr Point() noexcept : x(0.0f), y(0.0f) {}
 
-	PT() noexcept ;
+	template <typename T>
+	constexpr Point(T v) noexcept requires std::is_arithmetic_v<T> : x(v), y(v) {}
 
-	PT(int v) noexcept ;
-    
-	PT(int x, int y) noexcept ;
+	template <typename T>
+	constexpr Point(T x, T y) noexcept requires std::is_arithmetic_v<T> : x(x), y(y) {}
 
-	PT(const PT& o) noexcept ;
+	constexpr Point(const Point& o) noexcept : x(o.x), y(o.y) {}
 
-	PT(const PTF& o) noexcept ;
+	constexpr Point& operator=(float v) noexcept { 
+		x = y = v ;
+		return *this ; 
+	}
 
-	PT(const SZ& o) noexcept ;
+	constexpr Point& operator=(const Point& o) noexcept {
+		x = o.x ;
+		y = o.y ;
+		return *this ;
+	}
 
-	PT(const SZF& o) noexcept ;
+	constexpr Point operator+() const noexcept { 
+		return *this ; 
+	}
 
-	explicit PT(const tagPOINT& o) noexcept ;
-	
-	explicit PT(const POINTL& o) noexcept ;
-	
-	explicit PT(const tagSIZE& o) noexcept ;
-	
-	explicit PT(const tagPOINTS& o) noexcept ;
+	constexpr Point operator-() const noexcept { 
+		return {-x, -y} ; 
+	}
 
-	constexpr PT& operator=(int v) noexcept ;
+	constexpr Point& operator+=(const Point& o) noexcept { 
+		x += static_cast<float>(o.x) ; 
+		y += static_cast<float>(o.y) ; 
+		return *this ; 
+	}
 
-	constexpr PT& operator=(const PT& o) noexcept ;
+	constexpr Point& operator-=(const Point& o) noexcept { 
+		x -= static_cast<float>(o.x) ; 
+		y -= static_cast<float>(o.y) ; 
+		return *this ; 
+	}
 
-	constexpr PT& operator=(const PTF& o) noexcept ;
+	constexpr Point& operator*=(const Point& o) noexcept { 
+		x *= static_cast<float>(o.x) ; 
+		y *= static_cast<float>(o.y) ; 
+		return *this ; 
+	}
 
-	constexpr PT& operator=(const SZ& o) noexcept ;
+	constexpr Point& operator/=(const Point& o) noexcept { 
+		x /= static_cast<float>(o.x) ; 
+		y /= static_cast<float>(o.y) ; 
+		return *this ; 
+	}
 
-	constexpr PT& operator=(const SZF& o) noexcept ;
-	
-    PT operator+() const noexcept ;
+	template <typename T>
+	constexpr Point& operator+=(T v) noexcept requires std::is_arithmetic_v<T> { 
+		x += static_cast<float>(v) ; 
+		y += static_cast<float>(v) ; 
+		return *this ; 
+	}
 
-    PT operator-() const noexcept ;
+	template <typename T>
+	constexpr Point& operator-=(T v) noexcept requires std::is_arithmetic_v<T> { 
+		x -= static_cast<float>(v) ; 
+		y -= static_cast<float>(v) ; 
+		return *this ; 
+	}
 
-	constexpr PT& operator+=(const PT& o) noexcept ;
+	template <typename T>
+	constexpr Point& operator*=(T v) noexcept requires std::is_arithmetic_v<T> { 
+		x *= static_cast<float>(v) ; 
+		y *= static_cast<float>(v) ; 
+		return *this ; 
+	}
 
-	constexpr PT& operator-=(const PT& o) noexcept ;
+	template <typename T>
+	constexpr Point& operator/=(T v) noexcept requires std::is_arithmetic_v<T> { 
+		x /= static_cast<float>(v) ; 
+		y /= static_cast<float>(v) ; 
+		return *this ; 
+	}
 
-	constexpr PT& operator*=(const PT& o) noexcept ;
+	constexpr bool operator==(const Point& o) const noexcept { 
+		return x == o.x && y == o.y ; 
+	}
 
-	constexpr PT& operator/=(const PT& o) noexcept ;
+	constexpr bool operator!=(const Point& o) const noexcept { 
+		return !(*this == o) ; 
+	}
 
-	constexpr PT& operator+=(int v) noexcept ;
+	constexpr operator tagPOINT() const noexcept { 
+		return {
+			static_cast<long>(x), 
+			static_cast<long>(y)
+		} ; 
+	}
 
-	constexpr PT& operator-=(int v) noexcept ;
+	constexpr operator _POINTL() const noexcept { 
+		return {
+			static_cast<long>(x), 
+			static_cast<long>(y)
+		} ; 
+	}
 
-	constexpr PT& operator*=(int v) noexcept ;
+	constexpr operator tagSIZE() const noexcept { 
+		return {
+			static_cast<long>(x), 
+			static_cast<long>(y)
+		} ; 
+	}
 
-	constexpr PT& operator/=(int v) noexcept ;
+	constexpr operator tagPOINTS() const noexcept { 
+		return {
+			static_cast<short>(x), 
+			static_cast<short>(y)
+		} ; 
+	}
 
-    bool operator==(const PT& o) const noexcept ;
+	operator GDIPLUS_BOUNDARY::Gdiplus::PointF() const noexcept {
+		return {x, y} ;
+	}
 
-    bool operator!=(const PT& o) const noexcept ;
+	operator GDIPLUS_BOUNDARY::Gdiplus::SizeF() const noexcept {
+		return {x, y} ;
+	}
 
-	explicit operator tagPOINT() const noexcept ;
+	operator GDIPLUS_BOUNDARY::Gdiplus::Point() const noexcept {
+		return {static_cast<int>(x), static_cast<int>(y)} ;
+	}
 
-	explicit operator _POINTL() const noexcept ;
-
-	explicit operator tagSIZE() const noexcept ;
-
-	explicit operator tagPOINTS() const noexcept ;
-
-	operator SZ() const noexcept ;
-
-	operator PTF() const noexcept ;
-
-	operator SZF() const noexcept ;
+	operator GDIPLUS_BOUNDARY::Gdiplus::Size() const noexcept {
+		return {static_cast<int>(x), static_cast<int>(y)} ;
+	}
 
 } ;
 
-PT operator+(const PT& a, const PT& b) noexcept ;
+constexpr Point operator+(const Point& a, const Point& b) noexcept  { 
+	return {
+		a.x + b.x, 
+		a.y + b.y
+	} ; 
+}
 
-PT operator-(const PT& a, const PT& b) noexcept ;
+constexpr Point operator-(const Point& a, const Point& b) noexcept  { 
+	return {
+		a.x - b.x, 
+		a.y - b.y
+	} ; 
+}
 
-PT operator*(const PT& a, const PT& b) noexcept ;
+constexpr Point operator*(const Point& a, const Point& b) noexcept  { 
+	return {
+		a.x * b.x, 
+		a.y * b.y
+	} ; 
+}
 
-PT operator/(const PT& a, const PT& b) noexcept ;
+constexpr Point operator/(const Point& a, const Point& b) noexcept  { 
+	return {
+		a.x / b.x, 
+		a.y / b.y
+	} ; 
+}
 
-PT operator+(const PT& a, int v) noexcept ;
+template <typename T>
+constexpr Point operator+(const Point& a, T v) noexcept requires std::is_arithmetic_v<T> { 
+	return {
+		a.x + static_cast<float>(v), 
+		a.y + static_cast<float>(v)
+	} ; 
+}
 
-PT operator-(const PT& a, int v) noexcept ;
+template <typename T>
+constexpr Point operator-(const Point& a, T v) noexcept requires std::is_arithmetic_v<T> { 
+	return {
+		a.x - static_cast<float>(v), 
+		a.y - static_cast<float>(v)
+	} ; 
+}
 
-PT operator*(const PT& a, int v) noexcept ;
+template <typename T>
+constexpr Point operator*(const Point& a, T v) noexcept requires std::is_arithmetic_v<T> { 
+	return {
+		a.x * static_cast<float>(v), 
+		a.y * static_cast<float>(v)
+	} ; 
+}
 
-PT operator/(const PT& a, int v) noexcept ;
+template <typename T>
+constexpr Point operator/(const Point& a, T v) noexcept requires std::is_arithmetic_v<T> { 
+	return {
+		a.x / static_cast<float>(v), 
+		a.y / static_cast<float>(v)
+	} ; 
+}
 
-PT operator+(int v, const PT& a) noexcept ;
+template <typename T>
+constexpr Point operator+(T v, const Point& a) noexcept requires std::is_arithmetic_v<T> { 
+	return a + v ; 
+}
 
-PT operator*(int v, const PT& a) noexcept ;
+template <typename T>
+constexpr Point operator*(T v, const Point& a) noexcept requires std::is_arithmetic_v<T> { 
+	return a * v ; 
+}
 
-PT operator-(int v, const PT& a) noexcept ;
+template <typename T>
+constexpr Point operator-(T v, const Point& a) noexcept requires std::is_arithmetic_v<T> { 
+	return {
+		v - a.x, 
+		v - a.y
+	} ; 
+}
 
-PT operator/(int v, const PT& a) noexcept ;
+template <typename T>
+constexpr Point operator/(T v, const Point& a) noexcept requires std::is_arithmetic_v<T> { 
+	return {
+		v / a.x, 
+		v / a.y
+	} ; 
+}
 
-std::ostream& operator<<(std::ostream& os, const PT& pt) noexcept ;
+inline std::ostream& operator<<(std::ostream& os, const Point& pt) noexcept {
+	return os << "{" << pt.x << ", " << pt.y << "}" ;
+}
 
-struct SZ : Gdiplus::Size {
+struct Quad {
 
-	using Base = Size ;
+	float x, y, w, h ;
 
-	SZ() noexcept ;
+	constexpr Quad() noexcept : x(0.0f), y(0.0f), w(0.0f), h(0.0f) {}
 
-	SZ(int v) noexcept ;
-    
-	SZ(int x, int y) noexcept ;
+	template <typename T>
+	constexpr Quad(T v) noexcept requires std::is_arithmetic_v<T> : x(static_cast<float>(v)), y(static_cast<float>(v)), w(static_cast<float>(v)), h(static_cast<float>(v)) {}
 
-	SZ(const SZ& o) noexcept ;
+	template <typename T>
+	constexpr Quad(T x, T y, T w, T h) noexcept requires std::is_arithmetic_v<T> : x(static_cast<float>(x)), y(static_cast<float>(y)), w(static_cast<float>(w)), h(static_cast<float>(h)) {}
 
-	SZ(const SZF& o) noexcept ;
+	constexpr Quad(const Quad& o) noexcept : x(o.x), y(o.y), w(o.w), h(o.h) {}
 
-	SZ(const PT& o) noexcept ;
+	constexpr Quad(const Point& p, const Point& s) noexcept : x(p.x), y(p.y), w(s.x), h(s.y) {}
 
-	SZ(const PTF& o) noexcept ;
+	template <typename T>
+	constexpr Quad& operator=(T v) noexcept requires std::is_arithmetic_v<T> { 
+		x = y = w = h = static_cast<float>(v) ; 
+		return *this ; 
+	}
 
-	SZ(const tagPOINT& o) noexcept ;
-	
-	SZ(const POINTL& o) noexcept ;
-	
-	SZ(const tagSIZE& o) noexcept ;
-	
-	SZ(const tagPOINTS& o) noexcept ;
+	constexpr Quad& operator=(const Quad& o) noexcept { 
+		x = o.x ; 
+		y = o.y ; 
+		w = o.w ; 
+		h = o.h ; 
+		return *this ; 
+	}
 
-	constexpr SZ& operator=(int v) noexcept ;
+	constexpr Quad operator+() const noexcept { 
+		return *this ; 
+	}
 
-	constexpr SZ& operator=(const SZ& o) noexcept ;
+	constexpr Quad operator-() const noexcept { 
+		return {-x, -y, w, h} ; 
+	}
 
-	constexpr SZ& operator=(const SZF& o) noexcept ;
+	constexpr Quad& operator+=(const Quad& o) noexcept { 
+		x += o.x ; 
+		y += o.y ; 
+		w += o.w ; 
+		h += o.h ; 
+		return *this ; 
+	}
 
-	constexpr SZ& operator=(const PT& o) noexcept ;
+	constexpr Quad& operator-=(const Quad& o) noexcept { 
+		x -= o.x ; 
+		y -= o.y ; 
+		w -= o.w ; 
+		h -= o.h ; 
+		return *this ; 
+	}
 
-	constexpr SZ& operator=(const PTF& o) noexcept ;
-	
-    SZ operator+() const noexcept ;
+	constexpr Quad& operator*=(const Quad& o) noexcept { 
+		x *= o.x ; 
+		y *= o.y ; 
+		w *= o.w ; 
+		h *= o.h ; 
+		return *this ; 
+	}
 
-    SZ operator-() const noexcept ;
+	constexpr Quad& operator/=(const Quad& o) noexcept { 
+		x /= o.x ; 
+		y /= o.y ; 
+		w /= o.w ; 
+		h /= o.h ; 
+		return *this ; 
+	}
 
-	constexpr SZ& operator+=(const SZ& o) noexcept ;
+	template <typename T>
+	constexpr Quad& operator+=(T v) noexcept requires std::is_arithmetic_v<T> { 
+		x += static_cast<float>(v) ; 
+		y += static_cast<float>(v) ; 
+		w += static_cast<float>(v) ; 
+		h += static_cast<float>(v) ; 
+		return *this ; 
+	}
 
-	constexpr SZ& operator-=(const SZ& o) noexcept ;
+	template <typename T>
+	constexpr Quad& operator-=(T v) noexcept requires std::is_arithmetic_v<T> { 
+		x -= static_cast<float>(v) ; 
+		y -= static_cast<float>(v) ; 
+		w -= static_cast<float>(v) ; 
+		h -= static_cast<float>(v) ; 
+		return *this ; 
+	}
 
-	constexpr SZ& operator*=(const SZ& o) noexcept ;
+	template <typename T>
+	constexpr Quad& operator*=(T v) noexcept requires std::is_arithmetic_v<T> { 
+		x *= static_cast<float>(v) ; 
+		y *= static_cast<float>(v) ; 
+		w *= static_cast<float>(v) ; 
+		h *= static_cast<float>(v) ; 
+		return *this ; 
+	}
 
-	constexpr SZ& operator/=(const SZ& o) noexcept ;
+	template <typename T>
+	constexpr Quad& operator/=(T v) noexcept requires std::is_arithmetic_v<T> { 
+		x /= static_cast<float>(v) ; 
+		y /= static_cast<float>(v) ; 
+		w /= static_cast<float>(v) ; 
+		h /= static_cast<float>(v) ; 
+		return *this ; 
+	}
 
-	constexpr SZ& operator+=(int v) noexcept ;
+	constexpr bool operator==(const Quad& o) const noexcept { 
+		return x == o.x && y == o.x && w == o.x && h == o.x ; 
+	}
 
-	constexpr SZ& operator-=(int v) noexcept ;
+	constexpr bool operator!=(const Quad& o) const noexcept { 
+		return !(*this == o) ; 
+	}
 
-	constexpr SZ& operator*=(int v) noexcept ;
+	constexpr operator tagRECT() const noexcept { 
+		return {
+			static_cast<long>(x), 
+			static_cast<long>(y), 
+			static_cast<long>(w) + static_cast<long>(x), 
+			static_cast<long>(h) +  static_cast<long>(y) 
+		} ; 
+	}
 
-	constexpr SZ& operator/=(int v) noexcept ;
+	constexpr operator _RECTL() const noexcept { 
+		return {
+			static_cast<long>(x), 
+			static_cast<long>(y), 
+			static_cast<long>(w) + static_cast<long>(x), 
+			static_cast<long>(h) +  static_cast<long>(y) 
+		} ; 
+	}
 
-    bool operator==(const SZ& o) const noexcept ;
+	operator GDIPLUS_BOUNDARY::Gdiplus::Rect() const noexcept {
+		return {static_cast<int>(x), static_cast<int>(y), static_cast<int>(w), static_cast<int>(h)} ;
+	}
 
-    bool operator!=(const SZ& o) const noexcept ;
+	operator GDIPLUS_BOUNDARY::Gdiplus::RectF() const noexcept {
+		return {x, y, w, h} ;
+	}
 
-	explicit operator tagPOINT() const noexcept ;
+	constexpr const Point getPos() const noexcept { 
+		return {x, y} ; 
+	}
 
-	explicit operator _POINTL() const noexcept ;
+	constexpr Point getPos() noexcept { 
+		return {x, y} ; 
+	}
 
-	explicit operator tagSIZE() const noexcept ;
+	constexpr const Point getSize() const noexcept { 
+		return {w, h} ; 
+	}
 
-	explicit operator tagPOINTS() const noexcept ;
+	constexpr Point getSize() noexcept { 
+		return {w, h} ; 
+	}
 
-	operator PT() const noexcept ;
+	template <typename T>
+	constexpr Quad& setPos(T x, T y) noexcept requires std::is_arithmetic_v<T> { 
+		x = static_cast<float>(x) ; 
+		y = static_cast<float>(y) ; 
+		return *this ;
+	}
 
-	operator PTF() const noexcept ;
+	constexpr Quad& setPos(const Point& pos) noexcept { 
+		x = pos.x ; 
+		y = pos.y ; 
+		return *this ;
+	}
 
-	operator SZF() const noexcept ;
+	template <typename T>
+	constexpr Quad& setSize(T w, T h) noexcept requires std::is_arithmetic_v<T> { 
+		w = static_cast<float>(w) ; 
+		h = static_cast<float>(h) ; 
+		return *this ;
+	}
 
+	constexpr Quad& setSize(const Point& size) noexcept { 
+		w = size.x ; 
+		h = size.y ; 
+		return *this ;
+	}
 } ;
 
-SZ operator+(const SZ& a, const SZ& b) noexcept ;
+constexpr Quad operator+(const Quad& a, const Quad& b) noexcept { 
+	return {
+		a.x + b.x, 
+		a.y + b.y, 
+		a.w + b.w, 
+		a.h + b.h
+	} ; 
+}
 
-SZ operator-(const SZ& a, const SZ& b) noexcept ;
+constexpr Quad operator-(const Quad& a, const Quad& b) noexcept { 
+	return {
+		a.x - b.x, 
+		a.y - b.y, 
+		a.w - b.w, 
+		a.h - b.h
+	} ; 
+}
 
-SZ operator*(const SZ& a, const SZ& b) noexcept ;
+constexpr Quad operator*(const Quad& a, const Quad& b) noexcept { 
+	return {
+		a.x * b.x, 
+		a.y * b.y, 
+		a.w * b.w, 
+		a.h * b.h
+	} ; 
+}
 
-SZ operator/(const SZ& a, const SZ& b) noexcept ;
+constexpr Quad operator/(const Quad& a, const Quad& b) noexcept { 
+	return {
+		a.x / b.x, 
+		a.y / b.y, 
+		a.w / b.w, 
+		a.h / b.h
+	} ; 
+}
 
-SZ operator+(const SZ& a, int v) noexcept ;
+template <typename T>
+constexpr Quad operator+(const Quad& a, T v) noexcept requires std::is_arithmetic_v<T> { 
+	return {
+		a.x + static_cast<float>(v), 
+		a.y + static_cast<float>(v), 
+		a.w + static_cast<float>(v), 
+		a.h + static_cast<float>(v)
+	} ; 
+}
 
-SZ operator-(const SZ& a, int v) noexcept ;
+template <typename T>
+constexpr Quad operator-(const Quad& a, T v) noexcept requires std::is_arithmetic_v<T> { 
+	return {
+		a.x - static_cast<float>(v), 
+		a.y - static_cast<float>(v), 
+		a.w - static_cast<float>(v), 
+		a.h - static_cast<float>(v)
+	} ; 
+}
 
-SZ operator*(const SZ& a, int v) noexcept ;
+template <typename T>
+constexpr Quad operator*(const Quad& a, T v) noexcept requires std::is_arithmetic_v<T> { 
+	return {
+		a.x * static_cast<float>(v), 
+		a.y * static_cast<float>(v), 
+		a.w * static_cast<float>(v), 
+		a.h * static_cast<float>(v)
+	} ; 
+}
 
-SZ operator/(const SZ& a, int v) noexcept ;
+template <typename T>
+constexpr Quad operator/(const Quad& a, T v) noexcept requires std::is_arithmetic_v<T> { 
+	return {
+		a.x / static_cast<float>(v), 
+		a.y / static_cast<float>(v), 
+		a.w / static_cast<float>(v), 
+		a.h / static_cast<float>(v)
+	} ; 
+}
 
-SZ operator+(int v, const SZ& a) noexcept ;
+template <typename T>
+constexpr Quad operator+(T v, const Quad& a) noexcept requires std::is_arithmetic_v<T> { 
+	return a + v ; 
+}
 
-SZ operator*(int v, const SZ& a) noexcept ;
+template <typename T>
+constexpr Quad operator-(T v, const Quad& a) noexcept requires std::is_arithmetic_v<T> { 
+	return {
+		v - a.x, 
+		v - a.y, 
+		v - a.w, 
+		v - a.h
+	} ; 
+}
 
-SZ operator-(int v, const SZ& a) noexcept ;
+template <typename T>
+constexpr Quad operator*(T v, const Quad& a) noexcept requires std::is_arithmetic_v<T> { 
+	return a * v ; 
+}
 
-SZ operator/(int v, const SZ& a) noexcept ;
+template <typename T>
+constexpr Quad operator/(T v, const Quad& a) noexcept requires std::is_arithmetic_v<T> { 
+	return {
+		v / a.x, 
+		v / a.y, 
+		v / a.w, 
+		v / a.h
+	} ; 
+}
 
-std::ostream& operator<<(std::ostream& os, const SZ& sz) noexcept ;
+inline std::ostream& operator<<(std::ostream& os, const Quad& q) noexcept {
+	return os << "{" << q.x << ", " << q.y << ", " << q.w << ", " << q.h << "}" ;
+}
 
-struct PTF : Gdiplus::PointF {
+#ifdef IS_LITTLE_ENDIAN
 
-	using Base = PointF ;
-
-	PTF() noexcept ;
-
-	PTF(float v) noexcept ;
-    
-	PTF(float x, float y) noexcept ;
-
-	PTF(const PTF& o) noexcept ;
-
-	PTF(const PT& o) noexcept ;
-
-	PTF(const SZ& o) noexcept ;
-
-	PTF(const SZF& o) noexcept ;
-
-	PTF(const tagPOINT& o) noexcept ;
-	
-	PTF(const POINTL& o) noexcept ;
-	
-	PTF(const tagSIZE& o) noexcept ;
-	
-	PTF(const tagPOINTS& o) noexcept ;
-
-	constexpr PTF& operator=(float v) noexcept ;
-
-	constexpr PTF& operator=(const PTF& o) noexcept ;
-
-	constexpr PTF& operator=(const PT& o) noexcept ;
-
-	constexpr PTF& operator=(const SZ& o) noexcept ;
-
-	constexpr PTF& operator=(const SZF& o) noexcept ;
-	
-    PTF operator+() const noexcept ;
-
-    PTF operator-() const noexcept ;
-
-	constexpr PTF& operator+=(const PTF& o) noexcept ;
-
-	constexpr PTF& operator-=(const PTF& o) noexcept ;
-
-	constexpr PTF& operator*=(const PTF& o) noexcept ;
-
-	constexpr PTF& operator/=(const PTF& o) noexcept ;
-
-	constexpr PTF& operator+=(float v) noexcept ;
-
-	constexpr PTF& operator-=(float v) noexcept ;
-
-	constexpr PTF& operator*=(float v) noexcept ;
-
-	constexpr PTF& operator/=(float v) noexcept ;
-
-    bool operator==(const PTF& o) const noexcept ;
-
-    bool operator!=(const PTF& o) const noexcept ;
-
-	explicit operator tagPOINT() const noexcept ;
-
-	explicit operator _POINTL() const noexcept ;
-
-	explicit operator tagSIZE() const noexcept ;
-
-	explicit operator tagPOINTS() const noexcept ;
-
-	operator PT() const noexcept ;
-
-	operator SZ() const noexcept ;
-
-	operator SZF() const noexcept ;
-
+enum class RGBA : uint8 {
+	RED		= 3,
+	GREEN	= 2,
+	BLUE	= 1,
+	ALPHA	= 0,
+	R		= RED,
+	G		= GREEN,
+	B		= BLUE,
+	A		= ALPHA
 } ;
 
-PTF operator+(const PTF& a, const PTF& b) noexcept ;
+#else
 
-PTF operator-(const PTF& a, const PTF& b) noexcept ;
-
-PTF operator*(const PTF& a, const PTF& b) noexcept ;
-
-PTF operator/(const PTF& a, const PTF& b) noexcept ;
-
-PTF operator+(const PTF& a, float v) noexcept ;
-
-PTF operator-(const PTF& a, float v) noexcept ;
-
-PTF operator*(const PTF& a, float v) noexcept ;
-
-PTF operator/(const PTF& a, float v) noexcept ;
-
-PTF operator+(float v, const PTF& a) noexcept ;
-
-PTF operator*(float v, const PTF& a) noexcept ;
-
-PTF operator-(float v, const PTF& a) noexcept ;
-
-PTF operator/(float v, const PTF& a) noexcept ;
-
-std::ostream& operator<<(std::ostream& os, const PTF& ptf) noexcept ;
-
-struct SZF : Gdiplus::SizeF {
-
-	using Base = SizeF ;
-
-	SZF() noexcept ;
-
-	SZF(float v) noexcept ;
-    
-	SZF(float x, float y) noexcept ;
-
-	SZF(const SZF& o) noexcept ;
-
-	SZF(const SZ& o) noexcept ;
-
-	SZF(const PT& o) noexcept ;
-
-	SZF(const PTF& o) noexcept ;
-
-	SZF(const tagPOINT& o) noexcept ;
-	
-	SZF(const POINTL& o) noexcept ;
-	
-	SZF(const tagSIZE& o) noexcept ;
-	
-	SZF(const tagPOINTS& o) noexcept ;
-
-	constexpr SZF& operator=(int v) noexcept ;
-	
-	constexpr SZF& operator=(const SZF& o) noexcept ;
-
-	constexpr SZF& operator=(const SZ& o) noexcept ;
-
-	constexpr SZF& operator=(const PT& o) noexcept ;
-
-	constexpr SZF& operator=(const PTF& o) noexcept ;
-	
-    SZF operator+() const noexcept ;
-
-    SZF operator-() const noexcept ;
-
-	constexpr SZF& operator+=(const SZF& o) noexcept ;
-
-	constexpr SZF& operator-=(const SZF& o) noexcept ;
-
-	constexpr SZF& operator*=(const SZF& o) noexcept ;
-
-	constexpr SZF& operator/=(const SZF& o) noexcept ;
-
-	constexpr SZF& operator+=(int v) noexcept ;
-
-	constexpr SZF& operator-=(int v) noexcept ;
-
-	constexpr SZF& operator*=(int v) noexcept ;
-
-	constexpr SZF& operator/=(int v) noexcept ;
-
-    bool operator==(const SZF& o) const noexcept ;
-
-    bool operator!=(const SZF& o) const noexcept ;
-
-	explicit operator tagPOINT() const noexcept ;
-
-	explicit operator _POINTL() const noexcept ;
-
-	explicit operator tagSIZE() const noexcept ;
-
-	explicit operator tagPOINTS() const noexcept ;
-
-	operator PT() const noexcept ;
-
-	operator PTF() const noexcept ;
-
-	operator SZ() const noexcept ;
-
+enum class RGBA : uint8 {
+	RED		= 0,
+	GREEN	= 1,
+	BLUE	= 2,
+	ALPHA	= 3,
+	R		= RED,
+	G		= GREEN,
+	B		= BLUE,
+	A		= ALPHA
 } ;
 
-SZF operator+(const SZF& a, const SZF& b) noexcept ;
+#endif
 
-SZF operator-(const SZF& a, const SZF& b) noexcept ;
+static_assert(static_cast<uint8>(RGBA::R) == 3 || static_cast<uint8>(RGBA::R) == 0, "Unexpected RGBA channel layout") ;
 
-SZF operator*(const SZF& a, const SZF& b) noexcept ;
+// error handler
 
-SZF operator/(const SZF& a, const SZF& b) noexcept ;
+namespace error_handler {
 
-SZF operator+(const SZF& a, float v) noexcept ;
+	struct color_access_out_of_bound {
+		const char* what() const noexcept ;
+	} ;
 
-SZF operator-(const SZF& a, float v) noexcept ;
+}
 
-SZF operator*(const SZF& a, float v) noexcept ;
+class Color {
+private :
+	union Color_ {
+		unsigned data ;
+		uint8 bytes[sizeof(unsigned)] ;
 
-SZF operator/(const SZF& a, float v) noexcept ;
+		constexpr Color_(Color_&&) noexcept = delete ;
+		constexpr Color_& operator=(Color_&&) noexcept = delete ;
 
-SZF operator+(float v, const SZF& a) noexcept ;
+		constexpr Color_(unsigned data) noexcept : data(data) {}
 
-SZF operator*(float v, const SZF& a) noexcept ;
+		constexpr Color_(uint8 r, uint8 g, uint8 b, uint8 a = 255U) noexcept : data(r << 24 | g << 16 | b << 8 | a ) {}
 
-SZF operator-(float v, const SZF& a) noexcept ;
+		constexpr Color_(const Color_& o) noexcept : data(o.data) {}
 
-SZF operator/(float v, const SZF& a) noexcept ;
+		constexpr Color_& operator=(const Color_& o) noexcept {
+			if (this != &o) 
+				data = o.data ;
+			return *this ;
+		}
+	} color_ ;
 
-std::ostream& operator<<(std::ostream& os, const SZ& sz) noexcept ;
+public :
+	constexpr Color(Color&& o) noexcept = delete ;
 
-struct Quad : Gdiplus::Rect {
+	constexpr Color& operator=(Color&& o) noexcept = delete ;
 
-	using Base = Rect ;
+	constexpr Color() noexcept : color_(0, 0, 0, 255) {}
 
-	Quad() noexcept ;
+	constexpr Color(uint8 r, uint8 g, uint8 b, uint8 a) noexcept : color_(r, g, b, a) {}
 
-	Quad(int v) noexcept ;
+	constexpr Color(const Color& o) noexcept : color_(o.color_) {}
 
-	Quad(int x, int y, int w, int h) noexcept ;
+	constexpr Color& operator=(const Color& o) noexcept {
+		if (this != &o)
+			color_ = o.color_ ;
+		return *this ;
+	}
 
-	template <typename T, typename U> requires z_helper::is_paired_data_unit<T> && z_helper::is_paired_data_unit<U>
-	Quad(const T& p, const U& s) noexcept : Base(p, s) {}
+	constexpr const uint8& operator[](RGBA channel) const noexcept {
+		return color_.bytes[static_cast<uint8>(channel)] ;
+	}
 
-	Quad(const Quad& o) noexcept ;
+	constexpr uint8& operator[](RGBA channel) noexcept {
+		return color_.bytes[static_cast<uint8>(channel)] ;
+	}
 
-	Quad(const QuadF& o) noexcept ;
+	const uint8& operator[](uint8 channel) const {
+		if (channel > 3)
+			throw error_handler::color_access_out_of_bound() ;
+		return color_.bytes[channel] ;
+	}
 
-	Quad(const tagRECT& o) noexcept ;
+	uint8& operator[](uint8 channel) {
+		if (channel > 3)
+			throw error_handler::color_access_out_of_bound() ;
+		return color_.bytes[channel] ;
+	}
 
-	Quad(const _RECTL& o) noexcept ;
+	constexpr const uint8* begin() const noexcept {
+		return color_.bytes ;
+	}
 
-	Quad& operator=(int v) noexcept ;
+	constexpr uint8* begin() noexcept {
+		return color_.bytes ;
+	}
 
-	Quad& operator=(const Quad& o) noexcept ;
+	constexpr const uint8* end() const noexcept {
+		return color_.bytes + sizeof(unsigned) ;
+	}
 
-	Quad& operator=(const QuadF& o) noexcept ;
+	constexpr uint8* end() noexcept {
+		return color_.bytes + sizeof(unsigned) ;
+	}
 
-    Quad operator+() const noexcept ;
+	constexpr operator COLORREF() const noexcept {
+		return color_.bytes[0] << 16 | color_.bytes[1] << 8 | color_.bytes[2] ;
+	}
 
-    Quad operator-() const noexcept ;
+	operator GDIPLUS_BOUNDARY::Gdiplus::Color() const noexcept {
+		return color_.bytes[3] << 24 | color_.bytes[2] << 16 | color_.bytes[1] << 8 | color_.bytes[0] ;
+	}
 
-	constexpr Quad& operator+=(const Quad& o) noexcept ;
-
-	constexpr Quad& operator-=(const Quad& o) noexcept ;
-
-	constexpr Quad& operator*=(const Quad& o) noexcept ;
-
-	constexpr Quad& operator/=(const Quad& o) noexcept ;
-
-	constexpr Quad& operator+=(int v) noexcept ;
-
-	constexpr Quad& operator-=(int v) noexcept ;
-
-	constexpr Quad& operator*=(int v) noexcept ;
-
-	constexpr Quad& operator/=(int v) noexcept ;
-
-    bool operator==(const Quad& o) const noexcept ;
-
-    bool operator!=(const Quad& o) const noexcept ;
-
-	explicit operator tagRECT() const noexcept ;
-
-	explicit operator _RECTL() const noexcept ;
-
-	operator QuadF() const noexcept ;
-
-	PT getPos() const noexcept ;
-
-	PT getPos() noexcept ;
-
-	SZ getSize() const noexcept ;
-
-	SZ getSize() noexcept ;
-
-	Quad& setPos(int x, int y) noexcept ;
-
-	Quad& setPos(const PT& pos) noexcept ;
-
-	Quad& setPos(const PTF& pos) noexcept ;
-
-	Quad& setSize(int w, int h) noexcept ;
-
-	Quad& setSize(const SZ& size) noexcept ;
-
-	Quad& setSize(const SZF& size) noexcept ;
+	const std::string getHex() const noexcept {
+		return to_hex(color_.data) ;
+	}
 } ;
 
-Quad operator+(const Quad& a, const Quad& b) noexcept ;
+inline std::ostream& operator<<(std::ostream& os, const Color& c) noexcept  {
+	return os << "{" << static_cast<int>(c[3]) << ", " << static_cast<int>(c[2]) << ", " << static_cast<int>(c[1]) << ", " << static_cast<int>(c[0])  << "{\n" ;
+}
 
-Quad operator-(const Quad& a, const Quad& b) noexcept ;
+std::ostream& operator<<(std::ostream& os, const Color& c) noexcept ;
 
-Quad operator*(const Quad& a, const Quad& b) noexcept ;
+using Vertex = std::vector<Point> ;
 
-Quad operator/(const Quad& a, const Quad& b) noexcept ;
+#ifdef USE_ZUNIT_HELPER
+#undef USE_ZUNIT_HELPER
+#endif
 
-Quad operator+(const Quad& a, int v) noexcept ;
+#ifdef USE_Z_ALIAS
+#undef USE_Z_ALIAS
+#endif
 
-Quad operator-(const Quad& a, int v) noexcept ;
-
-Quad operator*(const Quad& a, int v) noexcept ;
-
-Quad operator/(const Quad& a, int v) noexcept ;
-
-Quad operator-(int v, const Quad& a) noexcept ;
-
-Quad operator/(int v, const Quad& a) noexcept ;
-
-Quad operator+(int v, const Quad& a) noexcept ;
-
-Quad operator*(int v, const Quad& a) noexcept ;
-
-std::ostream& operator<<(std::ostream& os, const Quad& q) noexcept ;
-
-struct QuadF : Gdiplus::RectF {
-
-	using Base = RectF ;
-
-	QuadF() noexcept ;
-
-	QuadF(float v) noexcept ;
-
-	QuadF(float x, float y, float w, float h) noexcept ;
-
-	template <typename T, typename U> requires z_helper::is_paired_data_unit<T> && z_helper::is_paired_data_unit<U>
-	QuadF(const T& p, const U& s) noexcept : Base(p, s) {}
-
-	QuadF(const QuadF& o) noexcept ;
-
-	QuadF(const Quad& o) noexcept ;
-
-	QuadF(const tagRECT& o) noexcept ;
-
-	QuadF(const _RECTL& o) noexcept ;
-
-	QuadF& operator=(float v) noexcept ;
-
-	QuadF& operator=(const QuadF& o) noexcept ;
-
-	QuadF& operator=(const Quad& o) noexcept ;
-
-    QuadF operator+() const noexcept ;
-
-    QuadF operator-() const noexcept ;
-
-	constexpr QuadF& operator+=(const QuadF& o) noexcept ;
-
-	constexpr QuadF& operator-=(const QuadF& o) noexcept ;
-
-	constexpr QuadF& operator*=(const QuadF& o) noexcept ;
-
-	constexpr QuadF& operator/=(const QuadF& o) noexcept ;
-
-	constexpr QuadF& operator+=(float v) noexcept ;
-
-	constexpr QuadF& operator-=(float v) noexcept ;
-
-	constexpr QuadF& operator*=(float v) noexcept ;
-
-	constexpr QuadF& operator/=(float v) noexcept ;
-
-    bool operator==(const QuadF& o) const noexcept ;
-
-    bool operator!=(const QuadF& o) const noexcept ;
-
-	explicit operator tagRECT() const noexcept ;
-
-	explicit operator _RECTL() const noexcept ;
-
-	explicit operator Quad() const noexcept ;
-
-	PTF getPos() const noexcept ;
-
-	PTF getPos() noexcept ;
-
-	SZF getSize() const noexcept ;
-
-	SZF getSize() noexcept ;
-
-	constexpr QuadF& setPos(float x, float y) noexcept ;
-
-	constexpr QuadF& setPos(const PT& pos) noexcept ;
-
-	constexpr QuadF& setPos(const PTF& pos) noexcept ;
-
-	constexpr QuadF& setSize(float w, float h) noexcept ;
-
-	constexpr QuadF& setSize(const SZ& size) noexcept ;
-
-	constexpr QuadF& setSize(const SZF& size) noexcept ;
-} ;
-
-QuadF operator+(const QuadF& a, const QuadF& b) noexcept ;
-
-QuadF operator-(const QuadF& a, const QuadF& b) noexcept ;
-
-QuadF operator*(const QuadF& a, const QuadF& b) noexcept ;
-
-QuadF operator/(const QuadF& a, const QuadF& b) noexcept ;
-
-QuadF operator+(const QuadF& a, float v) noexcept ;
-
-QuadF operator-(const QuadF& a, float v) noexcept ;
-
-QuadF operator*(const QuadF& a, float v) noexcept ;
-
-QuadF operator/(const QuadF& a, float v) noexcept ;
-
-QuadF operator-(float v, const QuadF& a) noexcept ;
-
-QuadF operator/(float v, const QuadF& a) noexcept ;
-
-QuadF operator+(float v, const QuadF& a) noexcept ;
-
-QuadF operator*(float v, const QuadF& a) noexcept ;
-
-std::ostream& operator<<(std::ostream& os, const QuadF& qf) noexcept ;
-
-using Vertex = std::vector<PT> ;
-using Color = Gdiplus::Color ;
+#ifdef IS_LITTLE_ENDIAN
+    #undef IS_LITTLE_ENDIAN
+#endif

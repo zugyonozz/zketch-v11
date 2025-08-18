@@ -1,6 +1,8 @@
 #pragma once
 
+#ifdef __OBJC__
 #undef __OBJC__
+#endif
 
 #include <objidl.h>
 #include <gdiplus.h>

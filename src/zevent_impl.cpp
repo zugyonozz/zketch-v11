@@ -4,25 +4,25 @@ bool Event::isFromWindow(HWND src) const noexcept {
 	return hwnd == src ;
 }
 
-PT Event::getMousePosition() const noexcept {
-	return (type == EventType::MouseMove || type == EventType::MouseDown || type == EventType::MouseUp) ? PT{mouse.x, mouse.y} : PT{} ;
+Point Event::getMousePosition() const noexcept {
+	return (type == EventType::MouseMove || type == EventType::MouseDown || type == EventType::MouseUp) ? Point{static_cast<float>(mouse.x), static_cast<float>(mouse.y)} : Point{} ;
 }
 
-void Event::setMousePosition(PT pos) noexcept {
+void Event::setMousePosition(Point pos) noexcept {
 	if (type == EventType::MouseMove || type == EventType::MouseDown || type == EventType::MouseUp) {
-		mouse.x = pos.X ;
-		mouse.y = pos.Y ;
+		mouse.x = pos.x ;
+		mouse.y = pos.y ;
 	}
 }
 
-SZ Event::getResizeSize() const noexcept {
-	return (type == EventType::Resize) ? SZ{resize.w, resize.h} : SZ{} ;
+Point Event::getResizeSize() const noexcept {
+	return (type == EventType::Resize) ? Point{static_cast<float>(resize.w), static_cast<float>(resize.h)} : Point{} ;
 }
 
-void Event::setResizeSize(SZ newSize) noexcept {
+void Event::setResizeSize(Point newSize) noexcept {
 	if (type == EventType::Resize) {
-		resize.w = newSize.Width ;
-		resize.h = newSize.Height ;
+		resize.w = newSize.x ;
+		resize.h = newSize.y ;
 	}
 }
 
@@ -115,28 +115,28 @@ Event translateWinEvent(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) noexcept {
     return ev ;
 }
 
-PT getEventPosition(const Event& ev) noexcept {
+Point getEventPosition(const Event& ev) noexcept {
     return ev.getMousePosition() ;
 }
 
-SZ getEventSize(const Event& ev) noexcept {
+Point getEventSize(const Event& ev) noexcept {
     return ev.getResizeSize() ;
 }
 
-Event createMouseEvent(EventType type, PT position, MouseButton button) noexcept {
+Event createMouseEvent(EventType type, Point position, MouseButton button) noexcept {
     Event ev ;
     ev.type = type ;
-    ev.mouse.x = position.X ;
-    ev.mouse.y = position.Y ;
+    ev.mouse.x = position.x ;
+    ev.mouse.y = position.y ;
     ev.mouse.button = button ;
     return ev ;
 }
 
-Event createResizeEvent(SZ size) noexcept {
+Event createResizeEvent(Point size) noexcept {
     Event ev ;
     ev.type = EventType::Resize ;
-    ev.resize.w = size.Width ;
-    ev.resize.h = size.Height ;
+    ev.resize.w = size.x ;
+    ev.resize.h = size.y ;
     return ev ;
 }
 

@@ -3,7 +3,7 @@
 Bitmap::Bitmap(HBITMAP bmp) noexcept : hbmp(bmp) {
 	BITMAP bm ;
 	if (GetObject(bmp, sizeof(bm), &bm))
-		bound = Quad{0, 0, bm.bmWidth, bm.bmHeight} ;
+		bound = Quad{0L, 0L, bm.bmWidth, bm.bmHeight} ;
 }
 
 Bitmap::Bitmap(Bitmap&& o) noexcept : hbmp(o.hbmp), bound(o.bound) {
@@ -43,20 +43,20 @@ Quad& Bitmap::getRect() noexcept {
 	return bound ;
 }
 
-int Bitmap::getHeight() const noexcept {
-	return bound.Height ;
+float Bitmap::getWidth() const noexcept {
+	return bound.w ;
 }
 
-int Bitmap::getHeight() noexcept {
-	return bound.Height ;
+float Bitmap::getWidth() noexcept {
+	return bound.w ;
 }
 
-int Bitmap::getWidth() const noexcept {
-	return bound.Width ;
+float Bitmap::getHeight() const noexcept {
+	return bound.h ;
 }
 
-int Bitmap::getWidth() noexcept {
-	return bound.Width ;
+float Bitmap::getHeight() noexcept {
+	return bound.h ;
 }
 
 HBITMAP LoadBMP(cstr path) noexcept {

@@ -1,5 +1,9 @@
 #pragma once
 
+#ifndef USE_Z_ALIAS
+#define USE_Z_ALIAS
+#endif
+
 #define WIN32_LEAN_AND_MEAN
 
 #ifndef NOMINMAX
@@ -9,6 +13,8 @@
 #undef __OBJC__
 
 #include <windows.h>
+
+#ifdef USE_Z_ALIAS
 
 using uchar		= unsigned char ;
 using ullong	= unsigned long long ;
@@ -30,7 +36,11 @@ struct WinFg {
 		FORCEMINIMIZE = SW_FORCEMINIMIZE ,
 	} fg ;
 
-	constexpr operator int() const noexcept { 
-		return static_cast<int>(fg) ; 
-	}
+	constexpr operator int() const noexcept ;
 } ;
+
+#endif
+
+#ifdef USE_Z_ALIAS
+#undef USE_Z_ALIAS
+#endif

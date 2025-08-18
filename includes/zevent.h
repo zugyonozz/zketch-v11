@@ -46,13 +46,13 @@ struct Event {
 
 	bool isFromWindow(HWND src) const noexcept ;
 
-    PT getMousePosition() const noexcept ;
+    Point getMousePosition() const noexcept ;
 
-    void setMousePosition(PT pos) noexcept ;
+    void setMousePosition(Point pos) noexcept ;
 
-    SZ getResizeSize() const noexcept ;
+    Point getResizeSize() const noexcept ;
 
-    void setResizeSize(SZ newSize) noexcept ;
+    void setResizeSize(Point newSize) noexcept ;
 
     bool isMouseEvent() const noexcept ;
 
@@ -65,12 +65,12 @@ struct Event {
 
 Event translateWinEvent(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) noexcept ;
 
-PT getEventPosition(const Event& event) noexcept ;
+Point getEventPosition(const Event& event) noexcept ;
 
-SZ getEventSize(const Event& event) noexcept ;
+Point getEventSize(const Event& event) noexcept ;
 
-Event createMouseEvent(EventType type, PT position, MouseButton button) noexcept ;
+Event createMouseEvent(EventType type, Point position, MouseButton button) noexcept ;
 
-Event createResizeEvent(SZ size) noexcept ;
+Event createResizeEvent(Point size) noexcept ;
 
 Event createKeyEvent(EventType type, int keyCode) noexcept ;
