@@ -427,7 +427,7 @@ namespace zketch {
 		// Utility functions
 		constexpr void center_on_screen() noexcept {
 			Point screen_size{GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)} ;
-			Point window_size = static_cast<Point>(get_client_size()) ;
+			Point window_size = get_client_size() ;
 			Point centered_pos = (screen_size - window_size) / 2  ;
 			set_position(centered_pos.x, centered_pos.y)  ;
 		}

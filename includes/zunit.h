@@ -638,6 +638,24 @@ namespace zketch {
 		} color_ ;
 
 	public :
+		static constexpr Color Red() { return Color(255, 0, 0, 255) ; }
+		
+        static constexpr Color Green() { return Color(0, 255, 0, 255) ; }
+		
+        static constexpr Color Blue() { return Color(0, 0, 255, 255) ; }
+		
+        static constexpr Color White() { return Color(255, 255, 255, 255) ; }
+		
+        static constexpr Color Black() { return Color(0, 0, 0, 255) ; }
+		
+        static constexpr Color Yellow() { return Color(255, 255, 0, 255) ; }
+		
+        static constexpr Color Magenta() { return Color(255, 0, 255, 255) ; }
+		
+        static constexpr Color Cyan() { return Color(0, 255, 255, 255) ; }
+		
+        static constexpr Color Transparent() { return Color(0, 0, 0, 0) ; }
+		
 		constexpr Color(Color&& o) noexcept = delete ;
 
 		constexpr Color& operator=(Color&& o) noexcept = delete ;
@@ -695,7 +713,7 @@ namespace zketch {
 		}
 
 		operator Gdiplus::Color() const noexcept {
-			return Gdiplus::Color(color_.bytes[0], color_.bytes[3], color_.bytes[2], color_.bytes[1]) ;
+			return Gdiplus::Color(color_.bytes[3], color_.bytes[0], color_.bytes[1], color_.bytes[2]) ;
 		}
 
 		const std::string getHex() const noexcept {
@@ -704,7 +722,7 @@ namespace zketch {
 	} ;
 
 	inline std::ostream& operator<<(std::ostream& os, const Color& c) noexcept {
-		return os << "{" << static_cast<int>(c[3]) << ", " << static_cast<int>(c[2]) << ", " << static_cast<int>(c[1]) << ", " << static_cast<int>(c[0]) << "{\n" ;
+		return os << "{" << static_cast<int>(c[0]) << ", " << static_cast<int>(c[1]) << ", " << static_cast<int>(c[2]) << ", " << static_cast<int>(c[3]) << "}\n" ;
 	}
 
 	std::ostream& operator<<(std::ostream& os, const Color& c) noexcept ;
@@ -715,8 +733,4 @@ namespace zketch {
 
 #ifdef USE_ZUNIT_HELPER
 	#undef USE_ZUNIT_HELPER
-#endif
-
-#ifdef IS_LITTLE_ENDIAN
-	#undef IS_LITTLE_ENDIAN
 #endif
