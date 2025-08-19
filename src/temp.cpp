@@ -2,7 +2,8 @@
 #include "zwindow.h"
 #include "ztimer.h"
 #include "zdrawer.h"
-#include "zgdiplusinit.h"
+
+using namespace zketch ;
 
 class App : public Window<App> {
 public:
@@ -21,10 +22,14 @@ public:
         
         // Draw some additional shapes to show performance
         drawEllipse(hdc, Quad{50, 50, 100, 100}, 
-                   Color(255, 128, 255, 0),     // Green fill
+                   Color(0, 255, 0, 255),     // Green fill
                    Color(255, 255, 255, 255)); // White outline
 		// draw text
-		drawText(hdc, L"Hello World", {get_client_bounds().getSize() / 2}, {255, 255, 0, 255}, {L"Arial", 12.5f, GDIPLUS_BOUNDARY::Gdiplus::FontStyleBoldItalic}) ;
+		drawText(
+			hdc, L"Hello World", 
+			{get_client_bounds().getSize() / 2}, 
+			{255, 0, 255, 255}, // magenta
+			{L"Arial", 48.0f, FontStyle::BoldItalic}) ;
     }
 
     // Optional: Custom close handling

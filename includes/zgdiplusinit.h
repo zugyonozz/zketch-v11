@@ -1,18 +1,21 @@
 #pragma once
 
-#ifdef __OBJC__
-#undef __OBJC__
-#endif
+// platform header
 
 #include <objidl.h>
 #include <gdiplus.h>
 
-namespace error_handler {
-	struct failed_init_gdiplussession {
-		const char* what() {
-			return "Failed to initialize GDI+" ;
-		}
-	} ;
+namespace zketch {
+
+	namespace error_handler {
+
+		struct failed_init_gdiplussession {
+			const char* what() const noexcept {
+				return "Failed to initialize GDI+" ;
+			}
+		} ;
+
+	}
 }
 
 class GDIplusSession {
@@ -23,7 +26,7 @@ public :
 	GDIplusSession() {
 		Gdiplus::GdiplusStartupInput in ;
 		if (Gdiplus::GdiplusStartup(&token, &in, nullptr) != Gdiplus::Ok)
-            throw error_handler::failed_init_gdiplussession() ;
+            throw zketch::error_handler::failed_init_gdiplussession() ;
 	}
 	~GDIplusSession() {
         Gdiplus::GdiplusShutdown(token);

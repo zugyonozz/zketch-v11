@@ -1,42 +1,45 @@
 #pragma once
 
 #include "zunit.h"
-#include "zdef.h"
 
-class Bitmap {
-private :
-	HBITMAP hbmp = nullptr ;
-	Quad bound = {} ;
+namespace zketch {
 
-public :
-	Bitmap(const Bitmap&) = delete ;
-	Bitmap& operator=(const Bitmap&) = delete ;
+	class Bitmap {
+	private :
+		HBITMAP hbmp = nullptr ;
+		Quad bound = {} ;
 
-	Bitmap() noexcept  = default ;
+	public :
+		Bitmap(const Bitmap&) = delete ;
+		Bitmap& operator=(const Bitmap&) = delete ;
 
-	Bitmap(HBITMAP bmp) noexcept ;
+		Bitmap() noexcept  = default ;
 
-	Bitmap(Bitmap&& o) noexcept ;
+		Bitmap(HBITMAP bmp) noexcept ;
 
-	Bitmap& operator=(Bitmap&& o) noexcept ;
+		Bitmap(Bitmap&& o) noexcept ;
 
-	~Bitmap() noexcept ;
+		Bitmap& operator=(Bitmap&& o) noexcept ;
 
-	operator HBITMAP() noexcept ;
+		~Bitmap() noexcept ;
 
-	operator HBITMAP() const noexcept ;
+		operator HBITMAP() noexcept ;
 
-	const Quad& getRect() const noexcept ;
+		operator HBITMAP() const noexcept ;
 
-	Quad& getRect() noexcept ;
+		const Quad& getRect() const noexcept ;
 
-	float getHeight() const noexcept ;
+		Quad& getRect() noexcept ;
 
-	float getHeight() noexcept ;
+		float getHeight() const noexcept ;
 
-	float getWidth() const noexcept ;
+		float getHeight() noexcept ;
 
-	float getWidth() noexcept ;
-} ;
+		float getWidth() const noexcept ;
 
-HBITMAP LoadBMP(cstr path) noexcept ;
+		float getWidth() noexcept ;
+	} ;
+
+	HBITMAP LoadBMP(cstr path) noexcept ;
+
+}

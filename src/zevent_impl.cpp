@@ -1,148 +1,152 @@
 #include "zevent.h"
 
-bool Event::isFromWindow(HWND src) const noexcept {
-	return hwnd == src ;
-}
+namespace zketch {
 
-Point Event::getMousePosition() const noexcept {
-	return (type == EventType::MouseMove || type == EventType::MouseDown || type == EventType::MouseUp) ? Point{static_cast<float>(mouse.x), static_cast<float>(mouse.y)} : Point{} ;
-}
-
-void Event::setMousePosition(Point pos) noexcept {
-	if (type == EventType::MouseMove || type == EventType::MouseDown || type == EventType::MouseUp) {
-		mouse.x = pos.x ;
-		mouse.y = pos.y ;
+	bool Event::isFromWindow(HWND src) const noexcept {
+		return hwnd == src ;
 	}
-}
 
-Point Event::getResizeSize() const noexcept {
-	return (type == EventType::Resize) ? Point{static_cast<float>(resize.w), static_cast<float>(resize.h)} : Point{} ;
-}
-
-void Event::setResizeSize(Point newSize) noexcept {
-	if (type == EventType::Resize) {
-		resize.w = newSize.x ;
-		resize.h = newSize.y ;
+	Point Event::getMousePosition() const noexcept {
+		return (type == EventType::MouseMove || type == EventType::MouseDown || type == EventType::MouseUp) ? Point{static_cast<float>(mouse.x), static_cast<float>(mouse.y)} : Point{} ;
 	}
-}
 
-bool Event::isMouseEvent() const noexcept {
-	return type == EventType::MouseMove || type == EventType::MouseDown || type == EventType::MouseUp ;
-}
+	void Event::setMousePosition(Point pos) noexcept {
+		if (type == EventType::MouseMove || type == EventType::MouseDown || type == EventType::MouseUp) {
+			mouse.x = pos.x ;
+			mouse.y = pos.y ;
+		}
+	}
 
-bool Event::isKeyEvent() const noexcept {
-	return type == EventType::KeyDown || type == EventType::KeyUp ;
-}
+	Point Event::getResizeSize() const noexcept {
+		return (type == EventType::Resize) ? Point{static_cast<float>(resize.w), static_cast<float>(resize.h)} : Point{} ;
+	}
 
-bool Event::isMouseButton(MouseButton button) const noexcept {
-	return isMouseEvent() && mouse.button == button ;
-}
+	void Event::setResizeSize(Point newSize) noexcept {
+		if (type == EventType::Resize) {
+			resize.w = newSize.x ;
+			resize.h = newSize.y ;
+		}
+	}
 
-bool Event::isKey(int keyCode) const noexcept {
-	return isKeyEvent() && key.keyCode == keyCode ;
-}
+	bool Event::isMouseEvent() const noexcept {
+		return type == EventType::MouseMove || type == EventType::MouseDown || type == EventType::MouseUp ;
+	}
 
-Event translateWinEvent(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) noexcept {
-    Event ev ;
-	ev.hwnd = hwnd ;
+	bool Event::isKeyEvent() const noexcept {
+		return type == EventType::KeyDown || type == EventType::KeyUp ;
+	}
 
-    switch (msg) {
-        case WM_QUIT :
-			ev.type = EventType::Quit ;
-        case WM_CLOSE :
-			ev.type = EventType::Close ;
-			break ;
-        case WM_DESTROY :
-            ev.type = EventType::Quit ;
-            break ;
+	bool Event::isMouseButton(MouseButton button) const noexcept {
+		return isMouseEvent() && mouse.button == button ;
+	}
 
-        case WM_KEYDOWN :
-            ev.type = EventType::KeyDown ;
-            ev.key.keyCode = (int)wp ;
-            break ;
+	bool Event::isKey(int keyCode) const noexcept {
+		return isKeyEvent() && key.keyCode == keyCode ;
+	}
 
-        case WM_KEYUP :
-            ev.type = EventType::KeyUp ;
-            ev.key.keyCode = (int)wp ;
-            break ;
+	Event translateWinEvent(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) noexcept {
+		Event ev ;
+		ev.hwnd = hwnd ;
 
-        case WM_MOUSEMOVE :
-            ev.type = EventType::MouseMove ;
-            ev.mouse.x = GET_X_LPARAM(lp) ;
-            ev.mouse.y = GET_Y_LPARAM(lp) ;
-            ev.mouse.button = MouseButton::Unknown ;
-            break ;
+		switch (msg) {
+			case WM_QUIT :
+				ev.type = EventType::Quit ;
+			case WM_CLOSE :
+				ev.type = EventType::Close ;
+				break ;
+			case WM_DESTROY :
+				ev.type = EventType::Quit ;
+				break ;
 
-        case WM_LBUTTONDOWN :
-            ev.type = EventType::MouseDown ;
-            ev.mouse.x = GET_X_LPARAM(lp) ;
-            ev.mouse.y = GET_Y_LPARAM(lp) ;
-            ev.mouse.button = MouseButton::Left ;
-            break ;
+			case WM_KEYDOWN :
+				ev.type = EventType::KeyDown ;
+				ev.key.keyCode = (int)wp ;
+				break ;
 
-        case WM_RBUTTONDOWN :
-            ev.type = EventType::MouseDown ;
-            ev.mouse.x = GET_X_LPARAM(lp) ;
-            ev.mouse.y = GET_Y_LPARAM(lp) ;
-            ev.mouse.button = MouseButton::Right ;
-            break ;
+			case WM_KEYUP :
+				ev.type = EventType::KeyUp ;
+				ev.key.keyCode = (int)wp ;
+				break ;
 
-        case WM_LBUTTONUP :
-            ev.type = EventType::MouseUp ;
-            ev.mouse.x = GET_X_LPARAM(lp) ;
-            ev.mouse.y = GET_Y_LPARAM(lp) ;
-            ev.mouse.button = MouseButton::Left ;
-            break ;
+			case WM_MOUSEMOVE :
+				ev.type = EventType::MouseMove ;
+				ev.mouse.x = GET_X_LPARAM(lp) ;
+				ev.mouse.y = GET_Y_LPARAM(lp) ;
+				ev.mouse.button = MouseButton::Unknown ;
+				break ;
 
-        case WM_RBUTTONUP :
-            ev.type = EventType::MouseUp ;
-            ev.mouse.x = GET_X_LPARAM(lp) ;
-            ev.mouse.y = GET_Y_LPARAM(lp) ;
-            ev.mouse.button = MouseButton::Right ;
-            break ;
+			case WM_LBUTTONDOWN :
+				ev.type = EventType::MouseDown ;
+				ev.mouse.x = GET_X_LPARAM(lp) ;
+				ev.mouse.y = GET_Y_LPARAM(lp) ;
+				ev.mouse.button = MouseButton::Left ;
+				break ;
 
-        case WM_SIZE :
-            ev.type = EventType::Resize ;
-            ev.resize.w = LOWORD(lp) ;
-            ev.resize.h = HIWORD(lp) ;
-            break ;
+			case WM_RBUTTONDOWN :
+				ev.type = EventType::MouseDown ;
+				ev.mouse.x = GET_X_LPARAM(lp) ;
+				ev.mouse.y = GET_Y_LPARAM(lp) ;
+				ev.mouse.button = MouseButton::Right ;
+				break ;
 
-        default:
-            ev.type = EventType::None ;
-            break ;
-    }
+			case WM_LBUTTONUP :
+				ev.type = EventType::MouseUp ;
+				ev.mouse.x = GET_X_LPARAM(lp) ;
+				ev.mouse.y = GET_Y_LPARAM(lp) ;
+				ev.mouse.button = MouseButton::Left ;
+				break ;
 
-    return ev ;
-}
+			case WM_RBUTTONUP :
+				ev.type = EventType::MouseUp ;
+				ev.mouse.x = GET_X_LPARAM(lp) ;
+				ev.mouse.y = GET_Y_LPARAM(lp) ;
+				ev.mouse.button = MouseButton::Right ;
+				break ;
 
-Point getEventPosition(const Event& ev) noexcept {
-    return ev.getMousePosition() ;
-}
+			case WM_SIZE :
+				ev.type = EventType::Resize ;
+				ev.resize.w = LOWORD(lp) ;
+				ev.resize.h = HIWORD(lp) ;
+				break ;
 
-Point getEventSize(const Event& ev) noexcept {
-    return ev.getResizeSize() ;
-}
+			default:
+				ev.type = EventType::None ;
+				break ;
+		}
 
-Event createMouseEvent(EventType type, Point position, MouseButton button) noexcept {
-    Event ev ;
-    ev.type = type ;
-    ev.mouse.x = position.x ;
-    ev.mouse.y = position.y ;
-    ev.mouse.button = button ;
-    return ev ;
-}
+		return ev ;
+	}
 
-Event createResizeEvent(Point size) noexcept {
-    Event ev ;
-    ev.type = EventType::Resize ;
-    ev.resize.w = size.x ;
-    ev.resize.h = size.y ;
-    return ev ;
-}
+	Point getEventPosition(const Event& ev) noexcept {
+		return ev.getMousePosition() ;
+	}
 
-Event createKeyEvent(EventType type, int keyCode) noexcept {
-    Event ev ;
-    ev.type = type ;
-    ev.key.keyCode = keyCode ;
-    return ev ;
+	Point getEventSize(const Event& ev) noexcept {
+		return ev.getResizeSize() ;
+	}
+
+	Event createMouseEvent(EventType type, Point position, MouseButton button) noexcept {
+		Event ev ;
+		ev.type = type ;
+		ev.mouse.x = position.x ;
+		ev.mouse.y = position.y ;
+		ev.mouse.button = button ;
+		return ev ;
+	}
+
+	Event createResizeEvent(Point size) noexcept {
+		Event ev ;
+		ev.type = EventType::Resize ;
+		ev.resize.w = size.x ;
+		ev.resize.h = size.y ;
+		return ev ;
+	}
+
+	Event createKeyEvent(EventType type, int keyCode) noexcept {
+		Event ev ;
+		ev.type = type ;
+		ev.key.keyCode = keyCode ;
+		return ev ;
+	}
+
 }
