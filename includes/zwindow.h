@@ -4,7 +4,6 @@
 
 #include <queue>
 #include <atomic>
-#include <utility>
 
 // zketch header
 
@@ -232,10 +231,10 @@ namespace zketch {
 	protected:
 		// Protected constructors for CRTP
 		explicit Window(cstr title, const Point& size, const Point& pos = {0, 0}) 
-			: bounds_(pos, size)
+			: instance_(GetModuleHandleA(nullptr))
+			, bounds_(pos, size)
 			, title_(title)
-			, class_id_(IdGenerator::generate("zketchWindow"))
-			, instance_(GetModuleHandleA(nullptr)) {
+			, class_id_(IdGenerator::generate("zketchWindow")) {
 			
 			try {
 				if (!register_window_class()) {

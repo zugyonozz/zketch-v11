@@ -30,25 +30,25 @@
 			{
 				"command" : 0,
 				"file" : 0,
-				"line" : 20,
+				"line" : 15,
 				"parent" : 0
 			},
 			{
 				"command" : 1,
 				"file" : 0,
-				"line" : 41,
+				"line" : 37,
 				"parent" : 0
 			},
 			{
 				"command" : 2,
 				"file" : 0,
-				"line" : 31,
+				"line" : 29,
 				"parent" : 0
 			},
 			{
 				"command" : 3,
 				"file" : 0,
-				"line" : 27,
+				"line" : 21,
 				"parent" : 0
 			}
 		]
@@ -63,15 +63,15 @@
 				},
 				{
 					"backtrace" : 3,
-					"fragment" : "-IC:/msys64/mingw64/include"
+					"fragment" : "-Wall"
 				},
 				{
 					"backtrace" : 3,
-					"fragment" : "-IC:/msys64/mingw64/include/c++/15.2.0"
+					"fragment" : "-Wextra"
 				},
 				{
 					"backtrace" : 3,
-					"fragment" : "-IC:/msys64/mingw64/include/c++/15.2.0/x86_64-w64-mingw32"
+					"fragment" : "-Wpedantic"
 				}
 			],
 			"includes" : 
@@ -121,6 +121,16 @@
 			{
 				"backtrace" : 2,
 				"fragment" : "-luser32",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "-lole32",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "-loleaut32",
 				"role" : "libraries"
 			},
 			{

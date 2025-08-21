@@ -52,7 +52,7 @@ build cmake_object_order_depends_target_zketch_v11: phony || .
 build CMakeFiles/zketch_v11.dir/src/temp.cpp.obj: CXX_COMPILER__zketch_v11_unscanned_Debug D$:/Project/zketch-v11/src/temp.cpp || cmake_object_order_depends_target_zketch_v11
   CONFIG = Debug
   DEP_FILE = CMakeFiles\zketch_v11.dir\src\temp.cpp.obj.d
-  FLAGS = -g -std=gnu++20 -IC:/msys64/mingw64/include -IC:/msys64/mingw64/include/c++/15.2.0 -IC:/msys64/mingw64/include/c++/15.2.0/x86_64-w64-mingw32
+  FLAGS = -g -std=gnu++20 -Wall -Wextra -Wpedantic
   INCLUDES = -ID:/Project/zketch-v11/includes
   OBJECT_DIR = CMakeFiles\zketch_v11.dir
   OBJECT_FILE_DIR = CMakeFiles\zketch_v11.dir\src
@@ -60,7 +60,7 @@ build CMakeFiles/zketch_v11.dir/src/temp.cpp.obj: CXX_COMPILER__zketch_v11_unsca
 build CMakeFiles/zketch_v11.dir/src/zdrawer_impl.cpp.obj: CXX_COMPILER__zketch_v11_unscanned_Debug D$:/Project/zketch-v11/src/zdrawer_impl.cpp || cmake_object_order_depends_target_zketch_v11
   CONFIG = Debug
   DEP_FILE = CMakeFiles\zketch_v11.dir\src\zdrawer_impl.cpp.obj.d
-  FLAGS = -g -std=gnu++20 -IC:/msys64/mingw64/include -IC:/msys64/mingw64/include/c++/15.2.0 -IC:/msys64/mingw64/include/c++/15.2.0/x86_64-w64-mingw32
+  FLAGS = -g -std=gnu++20 -Wall -Wextra -Wpedantic
   INCLUDES = -ID:/Project/zketch-v11/includes
   OBJECT_DIR = CMakeFiles\zketch_v11.dir
   OBJECT_FILE_DIR = CMakeFiles\zketch_v11.dir\src
@@ -68,7 +68,7 @@ build CMakeFiles/zketch_v11.dir/src/zdrawer_impl.cpp.obj: CXX_COMPILER__zketch_v
 build CMakeFiles/zketch_v11.dir/src/zevent_impl.cpp.obj: CXX_COMPILER__zketch_v11_unscanned_Debug D$:/Project/zketch-v11/src/zevent_impl.cpp || cmake_object_order_depends_target_zketch_v11
   CONFIG = Debug
   DEP_FILE = CMakeFiles\zketch_v11.dir\src\zevent_impl.cpp.obj.d
-  FLAGS = -g -std=gnu++20 -IC:/msys64/mingw64/include -IC:/msys64/mingw64/include/c++/15.2.0 -IC:/msys64/mingw64/include/c++/15.2.0/x86_64-w64-mingw32
+  FLAGS = -g -std=gnu++20 -Wall -Wextra -Wpedantic
   INCLUDES = -ID:/Project/zketch-v11/includes
   OBJECT_DIR = CMakeFiles\zketch_v11.dir
   OBJECT_FILE_DIR = CMakeFiles\zketch_v11.dir\src
@@ -76,7 +76,7 @@ build CMakeFiles/zketch_v11.dir/src/zevent_impl.cpp.obj: CXX_COMPILER__zketch_v1
 build CMakeFiles/zketch_v11.dir/src/zwindow_impl.cpp.obj: CXX_COMPILER__zketch_v11_unscanned_Debug D$:/Project/zketch-v11/src/zwindow_impl.cpp || cmake_object_order_depends_target_zketch_v11
   CONFIG = Debug
   DEP_FILE = CMakeFiles\zketch_v11.dir\src\zwindow_impl.cpp.obj.d
-  FLAGS = -g -std=gnu++20 -IC:/msys64/mingw64/include -IC:/msys64/mingw64/include/c++/15.2.0 -IC:/msys64/mingw64/include/c++/15.2.0/x86_64-w64-mingw32
+  FLAGS = -g -std=gnu++20 -Wall -Wextra -Wpedantic
   INCLUDES = -ID:/Project/zketch-v11/includes
   OBJECT_DIR = CMakeFiles\zketch_v11.dir
   OBJECT_FILE_DIR = CMakeFiles\zketch_v11.dir\src
@@ -92,7 +92,7 @@ build CMakeFiles/zketch_v11.dir/src/zwindow_impl.cpp.obj: CXX_COMPILER__zketch_v
 build zketch_v11.exe: CXX_EXECUTABLE_LINKER__zketch_v11_Debug CMakeFiles/zketch_v11.dir/src/temp.cpp.obj CMakeFiles/zketch_v11.dir/src/zdrawer_impl.cpp.obj CMakeFiles/zketch_v11.dir/src/zevent_impl.cpp.obj CMakeFiles/zketch_v11.dir/src/zwindow_impl.cpp.obj
   CONFIG = Debug
   FLAGS = -g
-  LINK_LIBRARIES = -lgdiplus  -lgdi32  -luser32  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
+  LINK_LIBRARIES = -lgdiplus  -lgdi32  -luser32  -lole32  -loleaut32  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = CMakeFiles\zketch_v11.dir
   POST_BUILD = cd .
   PRE_LINK = cd .

@@ -4,13 +4,8 @@
 	#define USE_ZTEXTURE_HELPER
 #endif
 
-// standard header
-#include <memory>
-#include <utility>
-
 // zketch header
 #include "zfont.h"
-#include "zlog.h"
 
 namespace zketch {
 
@@ -43,9 +38,7 @@ namespace zketch {
 			is_cached_ = false ;
 			
 			if (!filepath) {
-				#ifdef ZKECTH_DEBUG
-					zlog::error("Image::load - filepath is null") ;
-				#endif
+				zlog::error("Image::load - filepath is null\n") ;
 				return false ;
 			}
 
@@ -56,17 +49,14 @@ namespace zketch {
 				is_cached_ = true ;
 				
 				#ifdef ZKECTH_DEBUG
-					zlog::info("Image loaded: " + std::to_string(size_.x) + "x" + std::to_string(size_.y)) ;
+					zlog::info("Image loaded: ",size_.x, " x ", size_.y, '\n') ;
 				#endif
 				return true ;
 			}
 
 			bmp_.reset() ;
 			size_ = {} ;
-			
-			#ifdef ZKECTH_DEBUG
-				zlog::error("Failed to load image from path") ;
-			#endif
+			zlog::error("Failed to load image from path\n") ;
 			return false ;
 		}
 
@@ -104,53 +94,93 @@ namespace zketch {
         Canvas& operator=(Canvas&& other) noexcept = default;
 
 		bool Create(const Point& size) noexcept {
+			#ifdef ZKETCH_DEBUG 
+				zlog::info("Canvas::Create called with size: ", size.x, " x ", size.y, '\n') ;
+			#endif
+			
 			bmp_.reset() ;
 			size_ = {} ;
 			dirty_ = false ;
 
 			if (size.contains([](float n) { return n <= 0.0f ; })) {
-				#ifdef ZKECTH_DEBUG
-					zlog::error("Canvas::Create - Invalid size") ;
+				#ifdef ZKETCH_DEBUG 
+					zlog::warning("Canvas::Create - Invalid size detected\n") ;
 				#endif
 				return false ;
 			}
 
-			// OPTIMIZED: Use more efficient pixel format
-			bmp_ = std::make_unique<Gdiplus::Bitmap>(
-				static_cast<int>(size.x), 
-				static_cast<int>(size.y), 
-				PixelFormat32bppPARGB  // Premultiplied alpha for better performance
-			) ;
-
-			if (bmp_ && bmp_->GetLastStatus() == Gdiplus::Ok) {
-				size_ = size ;
-				dirty_ = true ; // New canvas needs initial draw
-				
-				#ifdef ZKECTH_DEBUG
-					zlog::info("Canvas created: " + std::to_string(size_.x) + "x" + std::to_string(size_.y)) ;
+			try {
+				#ifdef ZKETCH_DEBUG 
+					zlog::info("Creating GDI+ bitmap\n") ;
 				#endif
-				return true ;
-			}
+				bmp_ = std::make_unique<Gdiplus::Bitmap>(
+					static_cast<int>(size.x), 
+					static_cast<int>(size.y), 
+					PixelFormat32bppARGB
+				) ;
+				#ifdef ZKETCH_DEBUG 
+					zlog::info("Bitmap allocated, checking status\n") ;
+				#endif
+				
+				if (!bmp_) {
+					zlog::error("Failed to allocate bitmap memory\n") ;
+					return false ;
+				}
+				
+				Gdiplus::Status status = bmp_->GetLastStatus() ;
+				#ifdef ZKETCH_DEBUG 
+					zlog::info("Bitmap status: ", static_cast<int>(status), " (0 = Ok)\n") ;
+				#endif
+				
+				if (status == Gdiplus::Ok) {
+					size_ = size ;
+					dirty_ = true ;
+					#ifdef ZKETCH_DEBUG 
+						zlog::info("Testing graphics context creation\n") ;
+					#endif
+					try {
+						std::unique_ptr<Gdiplus::Graphics> test_gfx = std::make_unique<Gdiplus::Graphics>(bmp_.get()) ;
+						if (test_gfx && test_gfx->GetLastStatus() == Gdiplus::Ok) {
+							#ifdef ZKETCH_DEBUG 
+								zlog::info("Canvas created successfully: ", size.x, " x ", size.y, '\n') ;
+							#endif
+							return true ;
+						} else 
+							zlog::error("Failed to create test graphics context, status: ", (test_gfx ? static_cast<int>(test_gfx->GetLastStatus()) : -999), '\n') ;
+					} catch (...) {
+						zlog::error("Exception during graphics context test\n") ;
+					}
+				}
 
-			bmp_.reset() ;
-			#ifdef ZKECTH_DEBUG
-				zlog::error("Failed to create canvas bitmap") ;
-			#endif
-			return false ;
+				bmp_.reset() ;
+				zlog::error("Failed to create canvas bitmap, final status: ", static_cast<int>(status), '\n') ;
+				return false ;
+				
+			} catch (const std::bad_alloc&) {
+				zlog::error("Out of memory in Canvas::Create\n") ;
+				bmp_.reset() ;
+				return false ;
+			} catch (const std::exception& e) {
+				zlog::error("Exception in Canvas::Create: ", e.what(), '\n') ;
+				bmp_.reset() ;
+				return false ;
+			} catch (...) {
+				zlog::error("Unknown exception in Canvas::Create\n") ;
+				bmp_.reset() ;
+				return false ;
+			}
 		}
 
-		// OPTIMIZED: Present with dirty checking
 		void Present(HDC targetHdc) const noexcept {
             if (!bmp_ || !targetHdc) {
             	#ifdef ZKECTH_DEBUG
-            		if (!bmp_) zlog::warning("Canvas::Present - No bitmap") ;
-            		if (!targetHdc) zlog::warning("Canvas::Present - Invalid HDC") ;
+            		if (!bmp_) zlog::warning("Canvas::Present - No bitmap\n") ;
+            		if (!targetHdc) zlog::warning("Canvas::Present - Invalid HDC\n") ;
             	#endif
 				return ;
 			}
 
             Gdiplus::Graphics screenGraphics(targetHdc) ;
-            // OPTIMIZED: Set high-performance rendering hints
             screenGraphics.SetCompositingMode(Gdiplus::CompositingModeSourceOver) ;
             screenGraphics.SetCompositingQuality(Gdiplus::CompositingQualityHighSpeed) ;
             screenGraphics.SetInterpolationMode(Gdiplus::InterpolationModeNearestNeighbor) ;
@@ -189,8 +219,8 @@ namespace zketch {
 		bool isValid() const noexcept {
 			if (!gfx_ || !is_drawing_) {
 				#if defined(ZKECTH_DEBUG)
-					if (!gfx_) zlog::warning("Renderer - gfx is nullptr!") ;
-					if (!is_drawing_) zlog::warning("Renderer - not in drawing state!") ;
+					if (!gfx_) zlog::warning("Renderer - gfx is nullptr!\n") ;
+					if (!is_drawing_) zlog::warning("Renderer - not in drawing state!\n") ;
 				#endif
 				return false ;
 			}
@@ -202,7 +232,7 @@ namespace zketch {
 		~Renderer() noexcept {
 			if (is_drawing_) {
 				#ifdef ZKECTH_DEBUG
-					zlog::warning("Renderer destroyed while drawing - calling End()") ;
+					zlog::warning("Renderer destroyed while drawing - calling End()\n") ;
 				#endif
 				End() ;
 			}
@@ -238,16 +268,12 @@ namespace zketch {
 
 		bool Begin(Canvas& canvas) noexcept {
 			if (is_drawing_) {
-				#ifdef ZKECTH_DEBUG
-					zlog::error("Renderer::Begin - Already in drawing state") ;
-				#endif
+				zlog::error("Renderer::Begin - Already in drawing state\n") ;
 				return false ;
 			}
 
 			if (!canvas.isValid()) {
-				#ifdef ZKECTH_DEBUG
-					zlog::error("Renderer::Begin - Invalid canvas") ;
-				#endif
+				zlog::error("Renderer::Begin - Invalid canvas\n") ;
 				return false ;
 			}
             
@@ -267,9 +293,7 @@ namespace zketch {
                 return true ;
             }
             
-            #ifdef ZKECTH_DEBUG
-            	zlog::error("Renderer::Begin - Failed to create graphics context") ;
-            #endif
+            zlog::error("Renderer::Begin - Failed to create graphics context\n") ;
             return false ;
 		}
 
@@ -295,8 +319,8 @@ namespace zketch {
 			if (!isValid()) return ;
 
 			if (thickness < 0.1f) {
-				#if defined(ZKECTH_DEBUG)
-					zlog::warning("DrawRect - thickness lower than 0.1") ;
+				#ifdef ZKECTH_DEBUG
+					zlog::warning("DrawRect - thickness lower than 0.1\n") ;
 				#endif
 				return ;
 			}

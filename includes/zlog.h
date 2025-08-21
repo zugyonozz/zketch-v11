@@ -23,6 +23,18 @@ private :
 		SetConsoleTextAttribute(hConsole, oldColor) ;
 	}
 
+	template <typename T>
+	static void print(const T& val) noexcept {
+		if constexpr (std::is_same_v<T, std::string>)
+			printf("%s", val.c_str()) ;
+		else if constexpr (std::is_same_v<T, const char*>)
+			printf("%s", val) ;
+		else if constexpr (std::is_arithmetic_v<T>)
+			std::cout << val ; // atau printf dengan format berbeda
+		else
+			std::cout << val ; // fallback
+	}
+
 public :
 	zlog() noexcept = delete ;
 	zlog(const zlog&) noexcept = delete ;
@@ -31,21 +43,30 @@ public :
 	zlog& operator=(zlog&&) noexcept = delete ;
 
 
-	static inline void info(const str& msg) noexcept {
-		printf("[") ; 
+	template <typename... Args>
+	static inline void info(Args&&... args) noexcept {
+		printf("[") ;
 		apply_color("INFO", 0) ;
-		printf("]\t%s\n", msg.c_str()) ;
+		printf("]\t") ;
+		(print(std::forward<Args>(args)), ...) ;
+		printf("\n") ;
 	}
 
-	static inline void warning(const str& msg) noexcept {
-		printf("[") ; 
+	template <typename... Args>
+	static inline void warning(Args&&... args) noexcept {
+		printf("[") ;
 		apply_color("WARN", 1) ;
-		printf("]\t%s\n", msg.c_str()) ;
+		printf("]\t") ;
+		(print(std::forward<Args>(args)), ...) ;
+		printf("\n") ;
 	}
 
-	static inline void error(const str& msg) noexcept {
-		printf("[") ; 
+	template <typename... Args>
+	static inline void error(Args&&... args) noexcept {
+		printf("[") ;
 		apply_color("ERROR", 2) ;
-		printf("]\t%s\n", msg.c_str()) ;
+		printf("]\t") ;
+		(print(std::forward<Args>(args)), ...) ;
+		printf("\n") ;
 	}
 } ;

@@ -16,9 +16,10 @@ static_assert(sizeof(unsigned) == 4, "Color assumes 32-bit unsigned") ;
 	#endif
 #endif
 
+
 // zketch header
 
-#include "zdef.h"
+#include "zlog.h"
 
 #ifndef WIN32_LEAN_AND_MEAN
 	#define WIN32_LEAN_AND_MEAN
