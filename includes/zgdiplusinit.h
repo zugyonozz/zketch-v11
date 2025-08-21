@@ -33,4 +33,4 @@ public :
     }
 } ;
 
-inline GDIplusSession g ;
+static GDIplusSession gdiplusinit ;

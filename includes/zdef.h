@@ -2,7 +2,9 @@
 
 // standard header
 
+#include <memory>
 #include <string>
+#include <unordered_map>
 
 // platform header
 
@@ -32,6 +34,10 @@
 	using cwstr		= const wchar_t* ;
 	using str		= std::string ;
 	using wstr		= std::wstring ;
+	template <typename T, typename DP = std::default_delete<T>>
+	using uptr = std::unique_ptr<T, DP> ;
+	template <typename Key, typename T>
+	using fast_map = std::unordered_map<Key, T> ;
 
 #endif
 

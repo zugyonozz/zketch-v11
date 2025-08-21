@@ -2,9 +2,7 @@
 
 // standard header
 
-#include <unordered_map>
 #include <queue>
-#include <memory>
 #include <atomic>
 #include <utility>
 
@@ -22,13 +20,6 @@
 
 #ifndef USE_ZKETCH_ALIAS
 	#define USE_ZKETCH_ALIAS
-#endif
-
-#ifdef USE_ZKETCH_ALIAS
-
-	template<typename Key, typename Value>
-	using fast_map = std::unordered_map<Key, Value> ;
-
 #endif
 
 namespace zketch {
@@ -163,47 +154,49 @@ namespace zketch {
 				DestroyWindow(hwnd_) ;
 				hwnd_ = nullptr ;
 			}
-			
-			if (instance_) 
-				UnregisterClassA(class_id_.c_str(), instance_) ;
 		}
 
 		// Message handling - optimized for performance
 		LRESULT handle_message(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) noexcept {
 			switch (msg) {
-				case WM_PAINT: {
+				case WM_CREATE : {
+					if constexpr (requires() { static_cast<Derived*>(this)->OnCreate(); }) 
+						static_cast<Derived*>(this)->OnCreate() ;
+
+    				return 0 ;
+				}
+				case WM_PAINT : {
 					PAINTSTRUCT ps ;
 					HDC hdc = BeginPaint(hwnd, &ps) ;
-					
 					if constexpr (requires(HDC hdc) { static_cast<Derived*>(this)->OnPaint(hdc) ; }) 
 						static_cast<Derived*>(this)->OnPaint(hdc) ;
 					
 					EndPaint(hwnd, &ps) ;
 					return 0 ;
 				}
-				
-				case WM_CLOSE:
-					destroy() ;
-					should_close_.store(true, std::memory_order_relaxed) ;
-					return 0 ;
-					
-				case WM_DESTROY: {
-					auto it = hwnd_map_.find(hwnd) ;
-					if (it != hwnd_map_.end()) {
-						hwnd_map_.erase(it) ;
-					}
-					
-					if (window_count_.fetch_sub(1, std::memory_order_relaxed) <= 1) {
-						PostQuitMessage(0) ;
-					}
-					return 0 ;
-				}
-				
-				case WM_SIZE:
-					bounds_.setSize(LOWORD(lp), HIWORD(lp)) ;
+				case WM_SIZE : {
+					Point newSize = {LOWORD(lp), HIWORD(lp)} ;
+					bounds_.setSize(newSize) ;
+					if constexpr (requires(const Point& s) { static_cast<Derived*>(this)->OnResize(s); }) 
+                        static_cast<Derived*>(this)->OnResize(newSize) ;
+
 					break ;
-					
-				case WM_MOVE:
+				}
+				case WM_CLOSE : {
+                    Event event ;
+                    event.type = EventType::Close ;
+                    events_.emplace(std::move(event)) ;
+                    return 0 ;
+                }
+				case WM_NCDESTROY: {
+                    hwnd_map_.erase(hwnd_) ;
+                    if (window_count_.fetch_sub(1, std::memory_order_relaxed) == 1) 
+                        PostQuitMessage(0) ;
+
+                    hwnd_ = nullptr ;
+                    return 0 ;
+                }
+				case WM_MOVE :
 					bounds_.setPos(LOWORD(lp), HIWORD(lp)) ;
 					break ;
 					
@@ -222,16 +215,17 @@ namespace zketch {
 		// Static window procedure
 		static LRESULT CALLBACK window_procedure(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) noexcept {
 			Window* window = nullptr ;
-
 			if (msg == WM_NCCREATE) {
 				auto cs = reinterpret_cast<CREATESTRUCTA*>(lp) ;
 				window = static_cast<Window*>(cs->lpCreateParams) ;
 				SetWindowLongPtrA(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(window)) ;
+				window->hwnd_ = hwnd ;
 				hwnd_map_[hwnd] = window ;
+				window_count_.fetch_add(1, std::memory_order_relaxed) ;
 			} else 
 				window = reinterpret_cast<Window*>(GetWindowLongPtrA(hwnd, GWLP_USERDATA)) ;
 
-			return window ? window->handle_message(hwnd, msg, wp, lp) : DefWindowProcA(hwnd, msg, wp, lp) ;
+			return DefWindowProcA(hwnd, msg, wp, lp) ;
 		}
 
 	protected:
@@ -305,6 +299,12 @@ namespace zketch {
 		Window(const Window&) = delete ;
 		Window& operator=(const Window&) = delete ;
 
+		void close() noexcept {
+            if constexpr (requires() { static_cast<Derived*>(this)->OnClose(); }) 
+                static_cast<Derived*>(this)->OnClose();
+            destroy();
+        }
+
 		// Window operations
 		constexpr void show(int cmd = SW_SHOW) noexcept {
 			ShowWindow(hwnd_, cmd) ;
@@ -325,10 +325,6 @@ namespace zketch {
 
 		constexpr void restore() noexcept { 
 			ShowWindow(hwnd_, SW_RESTORE) ; 
-		}
-
-		void close() noexcept { 
-			should_close_.store(true, std::memory_order_relaxed) ; 
 		}
 
 
@@ -430,6 +426,10 @@ namespace zketch {
 			Point window_size = get_client_size() ;
 			Point centered_pos = (screen_size - window_size) / 2  ;
 			set_position(centered_pos.x, centered_pos.y)  ;
+		}
+
+		void invalidate() noexcept { 
+			InvalidateRect(hwnd_, nullptr, FALSE) ; 
 		}
 
 		constexpr bool contains_point(const Point& pt) const noexcept {

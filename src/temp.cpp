@@ -1,46 +1,60 @@
 #include <iostream>
 #include "zwindow.h"
 #include "ztimer.h"
-#include "zdrawer.h"
 #include "ztexture.h"
 
 using namespace zketch ;
 
 class App : public Window<App> {
 public:
-	std::unique_ptr<Texture> img ;
+	Image img ;
+	Renderer renderer ;
+	Canvas canvas ;
 
-    App(cstr title, const Point& size) noexcept : Window(title, size) {
-		img = loadIMG(L"res/image.png") ;
-
-		if (!img || !img->isValid()) 
-            std::cerr << "Peringatan: Gagal memuat 'image.png'. Pastikan file ada di direktori yang benar.\n" ;
-	}
+    App(cstr title, const Point& size) noexcept : Window(title, size) {}
     
     // Constructor with position support
     App(cstr title, const Point& size, const Point& pos) noexcept 
         : Window(title, size, pos) {}
 
+	void OnCreate() noexcept {
+		canvas.Create(get_client_size()) ;
+		img.load(L"res/image.png") ;
+		
+		RedrawStaticContent() ;
+	}
+
+	void RedrawStaticContent() noexcept {
+        if (renderer.Begin(canvas)) {
+            // Bersihkan dengan warna latar
+            renderer.Clear({255, 30, 30, 40});
+
+            // Gambar semua bentuk ke KANVAS, bukan ke layar!
+            renderer.FillEllipse({300, 300, 100, 100}, {255, 255, 0, 255});
+            renderer.DrawEllipse({300, 300, 100, 100}, {255, 0, 255, 255});
+            
+            renderer.FillRect({0, 0, 200, 200}, {255, 255, 0, 255});
+            renderer.DrawRect({0, 0, 200, 200}, {255, 0, 0, 0});
+
+            // Gambar image ke KANVAS
+            if (img.isValid())
+                renderer.DrawImage(img, Point{100, 100});
+
+            // Gambar teks ke KANVAS
+            renderer.DrawString(
+                L"Hello World", 
+                get_client_bounds().getSize() / 2.0f, 
+                {255, 0, 255, 255},
+                {L"Arial", 48.0f, FontStyle::BoldItalic}
+            );
+
+            renderer.End();
+        }
+    }
+
     // OnPaint method - automatically detected by SFINAE
-    void OnPaint(HDC hdc) const noexcept {
-		// Draw some additional shapes to show performance
-        drawEllipse(hdc, Quad{300, 300, 100, 100}, 
-                   Color(255, 255, 0, 255),     // Green fill
-                   Color(255, 0, 255, 255)); // White outline
-
-        // Draw a magenta rectangle with black border
-        drawRect(hdc, Quad{0, 0, 200, 200}, 
-                 Color(255, 255, 0, 255),    // Magenta fill
-                 Color(255, 0, 0, 0));       // Black outline
-
-		// draw text
-		drawText(
-			hdc, L"Hello World", 
-			{get_client_bounds().getSize() / 2}, 
-			{255, 0, 255, 255}, // magenta
-			{L"Arial", 48.0f, FontStyle::BoldItalic}) ;
-
-		img->drawTo(hdc, {400.0f, 0.0f}) ;
+    void OnPaint(HDC hdc) noexcept {
+        canvas.Present(hdc);
     }
 
     // Optional: Custom close handling

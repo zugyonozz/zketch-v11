@@ -1,6 +1,6 @@
 #pragma once
 
-#include "zfont.h"
+#include "ztexture.h"
 
 #ifndef USE_ZKETCH_ALIAS
 	#define USE_ZKETCH_ALIAS
@@ -11,11 +11,14 @@ namespace zketch {
 	// Basic rectangle drawing
 	void drawRect(HDC hdc, const Quad& rect, const Color& fill, const Color& outline, ullong thickness = 1) noexcept ;
 
-	// Ellipse drawing
-	void drawEllipse(HDC hdc, const Quad& rect, const Color& fill, const Color& outline, ullong thickness = 1) noexcept ;
-
 	// Rounded rectangle drawing
 	void drawRect(HDC hdc, const Quad& rect, const Color& fill, const Color& outline, float radius, ullong thickness = 1) noexcept ;
+
+	// explicit Rounded rectangle drawing
+	void drawRectRounded(HDC hdc, const Quad& rect, const Color& fill, const Color& outline, float radius, ullong thickness = 1) noexcept ;
+
+	// Ellipse drawing
+	void drawEllipse(HDC hdc, const Quad& rect, const Color& fill, const Color& outline, ullong thickness = 1) noexcept ;
 
 	// Polygon drawing
 	void drawPixels(HDC hdc, const Vertex& verts, const Color& fill, const Color& outline, ullong thickness = 1) noexcept ;

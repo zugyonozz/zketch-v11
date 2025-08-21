@@ -57,14 +57,6 @@ build CMakeFiles/zketch_v11.dir/src/temp.cpp.obj: CXX_COMPILER__zketch_v11_unsca
   OBJECT_DIR = CMakeFiles\zketch_v11.dir
   OBJECT_FILE_DIR = CMakeFiles\zketch_v11.dir\src
 
-build CMakeFiles/zketch_v11.dir/src/zbitmap_impl.cpp.obj: CXX_COMPILER__zketch_v11_unscanned_Debug D$:/Project/zketch-v11/src/zbitmap_impl.cpp || cmake_object_order_depends_target_zketch_v11
-  CONFIG = Debug
-  DEP_FILE = CMakeFiles\zketch_v11.dir\src\zbitmap_impl.cpp.obj.d
-  FLAGS = -g -std=gnu++20 -IC:/msys64/mingw64/include -IC:/msys64/mingw64/include/c++/15.2.0 -IC:/msys64/mingw64/include/c++/15.2.0/x86_64-w64-mingw32
-  INCLUDES = -ID:/Project/zketch-v11/includes
-  OBJECT_DIR = CMakeFiles\zketch_v11.dir
-  OBJECT_FILE_DIR = CMakeFiles\zketch_v11.dir\src
-
 build CMakeFiles/zketch_v11.dir/src/zdrawer_impl.cpp.obj: CXX_COMPILER__zketch_v11_unscanned_Debug D$:/Project/zketch-v11/src/zdrawer_impl.cpp || cmake_object_order_depends_target_zketch_v11
   CONFIG = Debug
   DEP_FILE = CMakeFiles\zketch_v11.dir\src\zdrawer_impl.cpp.obj.d
@@ -97,7 +89,7 @@ build CMakeFiles/zketch_v11.dir/src/zwindow_impl.cpp.obj: CXX_COMPILER__zketch_v
 #############################################
 # Link the executable zketch_v11.exe
 
-build zketch_v11.exe: CXX_EXECUTABLE_LINKER__zketch_v11_Debug CMakeFiles/zketch_v11.dir/src/temp.cpp.obj CMakeFiles/zketch_v11.dir/src/zbitmap_impl.cpp.obj CMakeFiles/zketch_v11.dir/src/zdrawer_impl.cpp.obj CMakeFiles/zketch_v11.dir/src/zevent_impl.cpp.obj CMakeFiles/zketch_v11.dir/src/zwindow_impl.cpp.obj
+build zketch_v11.exe: CXX_EXECUTABLE_LINKER__zketch_v11_Debug CMakeFiles/zketch_v11.dir/src/temp.cpp.obj CMakeFiles/zketch_v11.dir/src/zdrawer_impl.cpp.obj CMakeFiles/zketch_v11.dir/src/zevent_impl.cpp.obj CMakeFiles/zketch_v11.dir/src/zwindow_impl.cpp.obj
   CONFIG = Debug
   FLAGS = -g
   LINK_LIBRARIES = -lgdiplus  -lgdi32  -luser32  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32

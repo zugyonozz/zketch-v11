@@ -12,8 +12,8 @@ namespace zketch {
 
 	void Event::setMousePosition(Point pos) noexcept {
 		if (type == EventType::MouseMove || type == EventType::MouseDown || type == EventType::MouseUp) {
-			mouse.x = pos.x ;
-			mouse.y = pos.y ;
+			mouse.x = static_cast<int>(pos.x) ;
+			mouse.y = static_cast<int>(pos.y) ;
 		}
 	}
 
@@ -23,8 +23,8 @@ namespace zketch {
 
 	void Event::setResizeSize(Point newSize) noexcept {
 		if (type == EventType::Resize) {
-			resize.w = newSize.x ;
-			resize.h = newSize.y ;
+			resize.w = static_cast<int>(newSize.x) ;
+			resize.h = static_cast<int>(newSize.y) ;
 		}
 	}
 
@@ -51,6 +51,7 @@ namespace zketch {
 		switch (msg) {
 			case WM_QUIT :
 				ev.type = EventType::Quit ;
+				break ;
 			case WM_CLOSE :
 				ev.type = EventType::Close ;
 				break ;
@@ -128,8 +129,8 @@ namespace zketch {
 	Event createMouseEvent(EventType type, Point position, MouseButton button) noexcept {
 		Event ev ;
 		ev.type = type ;
-		ev.mouse.x = position.x ;
-		ev.mouse.y = position.y ;
+		ev.mouse.x = static_cast<int>(position.x) ;
+		ev.mouse.y = static_cast<int>(position.y) ;
 		ev.mouse.button = button ;
 		return ev ;
 	}
@@ -137,8 +138,8 @@ namespace zketch {
 	Event createResizeEvent(Point size) noexcept {
 		Event ev ;
 		ev.type = EventType::Resize ;
-		ev.resize.w = size.x ;
-		ev.resize.h = size.y ;
+		ev.resize.w = static_cast<int>(size.x) ;
+		ev.resize.h = static_cast<int>(size.y) ;
 		return ev ;
 	}
 
