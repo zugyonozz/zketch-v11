@@ -12,11 +12,12 @@ namespace zketch {
 
 	class Font {
 	private :
-		cwstr family_ ;
-		float size_ ;
-		int style_ ;
+		cwstr family_ = L"Arial" ;
+		float size_ = 20.0f ;
+		int style_ = 0 ;
 
 	public :
+		constexpr Font() noexcept {}
 		constexpr Font(cwstr family, float size, FontStyle style) noexcept : family_(family), size_(size), style_(static_cast<int>(style)) {}
 		constexpr Font(const Font& o) noexcept : family_(o.family_), size_(o.size_), style_(o.style_) {}
 
@@ -31,7 +32,6 @@ namespace zketch {
 		constexpr int style() const noexcept {
 			return style_ ;
 		}
-
 	} ;
 
 }

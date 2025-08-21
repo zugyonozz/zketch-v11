@@ -512,6 +512,16 @@ namespace zketch {
 			h = size.y ; 
 			return *this ;
 		}
+
+		template <typename ... Args>
+		constexpr bool contains(Args ... args) const noexcept requires (std::is_arithmetic_v<Args> && ...) {
+			return ((x == static_cast<float>(args) || y == static_cast<float>(args) || w == static_cast<float>(args) || h == static_cast<float>(args)) && ...) ;
+		}
+
+		template <typename ... Args>
+		constexpr bool contains(Args ... args) const noexcept requires (std::invocable<Args, float> && ...) {
+			return ((args(x) || args(y) || args(w) || args(h)) && ...) ;
+		}
 	} ;
 
 	constexpr Quad operator+(const Quad& a, const Quad& b) noexcept { 

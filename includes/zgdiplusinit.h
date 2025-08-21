@@ -29,7 +29,7 @@ public :
             throw zketch::error_handler::failed_init_gdiplussession() ;
 	}
 	~GDIplusSession() {
-        Gdiplus::GdiplusShutdown(token);
+        Gdiplus::GdiplusShutdown(token) ;
     }
 } ;
 

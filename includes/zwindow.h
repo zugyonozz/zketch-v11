@@ -26,11 +26,15 @@ namespace zketch {
 	namespace error_handler {
 
 		struct register_class_failed {
-			cstr what() const noexcept ;
+			cstr what() const noexcept {
+				return "Failed to register window class" ;
+			}
 		} ;
 
 		struct create_window_failed {
-			cstr what() const noexcept ;
+			cstr what() const noexcept {
+				return "Failed to create window" ;
+			}
 		} ;
 
 	}

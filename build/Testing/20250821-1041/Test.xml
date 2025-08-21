@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Site BuildName="(empty)"
+	BuildStamp="20250821-1041-Experimental"
+	Name="(empty)"
+	Generator="ctest-4.1.0"
+	CompilerName=""
+	CompilerVersion=""
+	OSName="Windows"
+	Hostname="Rafi-Indra"
+	OSRelease=" Personal"
+	OSVersion=" (Build 26100)"
+	OSPlatform="AMD64"
+	Is64Bits="1"
+	VendorString=""
+	VendorID="Unknown Manufacturer"
+	FamilyID="0"
+	ModelID="0"
+	ModelName=""
+	ProcessorCacheSize="0"
+	NumberOfLogicalCPU="12"
+	NumberOfPhysicalCPU="6"
+	TotalVirtualMemory="14728"
+	TotalPhysicalMemory="7560"
+	LogicalProcessorsPerPhysical="2"
+	ProcessorClockFrequency="2100"
+	>
+	<Testing>
+		<StartDateTime>Aug 21 17:41 SE Asia Standard Time</StartDateTime>
+		<StartTestTime>1755772913</StartTestTime>
+		<TestList/>
+		<EndDateTime>Aug 21 17:41 SE Asia Standard Time</EndDateTime>
+		<EndTestTime>1755772913</EndTestTime>
+		<ElapsedMinutes>0</ElapsedMinutes>
+	</Testing>
+</Site>
