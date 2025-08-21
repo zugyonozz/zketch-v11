@@ -90,6 +90,11 @@ namespace zketch {
 		template <typename T>
 		constexpr Point(T x, T y) noexcept requires std::is_arithmetic_v<T> : x(x), y(y) {}
 
+		template <typename X, typename Y>
+		constexpr Point(X x, Y y) noexcept requires std::is_arithmetic_v<X> && std::is_arithmetic_v<Y> : 
+		x(static_cast<float>(x)), 
+		y(static_cast<float>(y)) {}
+
 		constexpr Point(const Point& o) noexcept : x(o.x), y(o.y) {}
 
 		constexpr Point& operator=(float v) noexcept { 
@@ -330,6 +335,13 @@ namespace zketch {
 
 		template <typename T>
 		constexpr Quad(T x, T y, T w, T h) noexcept requires std::is_arithmetic_v<T> : x(static_cast<float>(x)), y(static_cast<float>(y)), w(static_cast<float>(w)), h(static_cast<float>(h)) {}
+
+		template <typename X, typename Y, typename W, typename H>
+		constexpr Quad(X x, Y y, W w, H h) noexcept requires std::is_arithmetic_v<X> && std::is_arithmetic_v<Y> && std::is_arithmetic_v<W> && std::is_arithmetic_v<H> : 
+		x(static_cast<float>(x)), 
+		y(static_cast<float>(y)), 
+		w(static_cast<float>(w)), 
+		h(static_cast<float>(h)) {}
 
 		constexpr Quad(const Quad& o) noexcept : x(o.x), y(o.y), w(o.w), h(o.h) {}
 
@@ -630,8 +642,8 @@ namespace zketch {
 			unsigned data ;
 			uchar bytes[sizeof(unsigned)] ;
 
-			constexpr Color_(Color_&&) noexcept = delete ;
-			constexpr Color_& operator=(Color_&&) noexcept = delete ;
+			constexpr Color_(Color_&&) noexcept = default ;
+			constexpr Color_& operator=(Color_&&) noexcept = default ;
 
 			constexpr Color_(unsigned data) noexcept : data(data) {}
 
@@ -665,9 +677,9 @@ namespace zketch {
 		
         static constexpr Color Transparent() { return Color(0, 0, 0, 0) ; }
 		
-		constexpr Color(Color&& o) noexcept = delete ;
+		constexpr Color(Color&& o) noexcept = default ;
 
-		constexpr Color& operator=(Color&& o) noexcept = delete ;
+		constexpr Color& operator=(Color&& o) noexcept = default ;
 
 		constexpr Color() noexcept : color_(0, 0, 0, 255) {}
 
@@ -737,6 +749,73 @@ namespace zketch {
 	std::ostream& operator<<(std::ostream& os, const Color& c) noexcept ;
 
 	using Vertex = std::vector<Point> ;
+
+	namespace math {
+        
+        inline float dot(const Point& a, const Point& b) noexcept {
+            return a.x * b.x + a.y * b.y ;
+        }
+        
+        inline float length(const Point& p) noexcept {
+            return std::sqrt(p.x * p.x + p.y * p.y) ;
+        }
+        
+        inline float lengthSquared(const Point& p) noexcept {
+            return p.x * p.x + p.y * p.y ;
+        }
+        
+        inline Point normalize(const Point& p) noexcept {
+            float len = length(p) ;
+            return len > 0.0f ? p / len : Point{} ;
+        }
+        
+        inline float distance(const Point& a, const Point& b) noexcept {
+            return length(b - a) ;
+        }
+        
+        inline Point lerp(const Point& a, const Point& b, float t) noexcept {
+            return a + (b - a) * t ;
+        }
+        
+        inline Point rotate(const Point& p, float angle) noexcept {
+            float cos_a = std::cos(angle) ;
+            float sin_a = std::sin(angle) ;
+            return {
+				p.x * cos_a - p.y * sin_a, 
+				p.x * sin_a + p.y * cos_a
+			} ;
+        }
+    }
+
+	namespace geometry {
+        
+        inline bool contains(const Quad& rect, const Point& point) noexcept {
+            return point.x >= rect.x && 
+				   point.x <= rect.x + rect.w &&
+                   point.y >= rect.y && 
+				   point.y <= rect.y + rect.h ;
+        }
+        
+        inline bool intersects(const Quad& a, const Quad& b) noexcept {
+            return !(
+				a.x + a.w < b.x || 
+				b.x + b.w < a.x || 
+				a.y + a.h < b.y || 
+				b.y + b.h < a.y
+			) ;
+        }
+        
+        inline Quad intersection(const Quad& a, const Quad& b) noexcept {
+            float left = std::max(a.x, b.x) ;
+            float top = std::max(a.y, b.y) ;
+            float right = std::min(a.x + a.w, b.x + b.w) ;
+            float bottom = std::min(a.y + a.h, b.y + b.h) ;
+            
+            if (left < right && top < bottom) 
+                return {left, top, right - left, bottom - top} ;
+            return {} ;
+        }
+    }
 
 }
 
